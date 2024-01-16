@@ -41,3 +41,5 @@ To use this application, follow these steps:
 - [pqxx](https://github.com/jtv/libpqxx): C++ library for interacting with PostgreSQL databases.
 
 ## Note:
+
+I used [mockaroo](https://www.mockaroo.com/) for mock sql data, simply use their service to create the mock_data table and change the columns ```first_name``` ```last_name``` to ```username``` ```password```.
