@@ -37,11 +37,15 @@ create_session(const std::string &username,
       "session_" +
       std::to_string(
           std::chrono::system_clock::now().time_since_epoch().count());
+
   SessionData session_data;
   session_data.username = username;
   session_data.expiration_time =
-      std::chrono::steady_clock::now() + std::chrono::minutes(30);
+      std::chrono::steady_clock::now() +
+      std::chrono::minutes(30);
   session_storage[session_id] = session_data;
+
+  // Return the generated session ID
   return session_id;
 }
 
@@ -140,6 +144,14 @@ std::string path_cat(beast::string_view base, beast::string_view path) {
   return result;
 }
 
+bool validate_token(
+    const std::string &token,
+    const std::unordered_map<std::string, SessionData> &session_storage) {
+  auto session_it = session_storage.find(token); 
+  return session_it != session_storage.end() &&
+         session_it->second.expiration_time > std::chrono::steady_clock::now();
+}
+
 template <class Body, class Allocator>
 http::message_generator
 handle_request(beast::string_view doc_root,
@@ -152,11 +164,6 @@ handle_request(beast::string_view doc_root,
       std::count(req.target().begin(), req.target().end(), '?');
   size_t num_equals = std::count(req.target().begin(), req.target().end(), '=');
   size_t num_ands = std::count(req.target().begin(), req.target().end(), '&');
-  // Log the counts (you can replace this with your specific logic)
-  // std::cout << "Number of slashes: " << num_slashes << std::endl;
-  // std::cout << "Number of questions: " << num_questions << std::endl;
-  // std::cout << "Number of equals: " << num_equals << std::endl;
-  // std::cout << "Number of ands: " << num_ands << std::endl;
   auto const index_request = [&req](beast::string_view target) {
     http::response<http::string_body> res{http::status::not_found,
                                           req.version()};
@@ -204,13 +211,15 @@ handle_request(beast::string_view doc_root,
             "session_" +
             std::to_string(
                 std::chrono::system_clock::now().time_since_epoch().count());
-        std::cout << "sesion id: " << session_id
+        std::cout << "sesion id: " << session_id << std::endl
                   << "session_storage size: " << session_storage.size()
                   << std::endl;
         SessionData session_data;
         session_data.username = username;
         session_data.expiration_time =
-            std::chrono::steady_clock::now() + std::chrono::minutes(30);
+            std::chrono::steady_clock::now() +
+            std::chrono::minutes(30); // Set expiration time to 30 minutes
+
         session_storage[session_id] = session_data;
         return res;
       } else {
@@ -234,8 +243,25 @@ handle_request(beast::string_view doc_root,
         http::status::internal_server_error, req.version()};
   };
 
-  auto const customer_api = [&req, &pg_pool](beast::string_view target) {
+  auto const customer_api = [&req, &pg_pool,
+                             &session_storage](beast::string_view target) {
     std::cout << "request to api made " << std::endl;
+    std::string authorization_header = req[http::field::authorization];
+    std::string bearer_prefix = "Bearer ";
+    if (authorization_header.size() > bearer_prefix.size() &&
+        std::equal(bearer_prefix.begin(), bearer_prefix.end(),
+                   authorization_header.begin())) {
+      std::string token = authorization_header.substr(bearer_prefix.size());
+        std::cout << "customer_api token: " << token << std::endl;
+      if (!validate_token(token, session_storage)) {
+        return http::response<http::string_body>{http::status::unauthorized,
+                                                 req.version()};
+      }
+
+    } else {
+      return http::response<http::string_body>{http::status::unauthorized,
+                                               req.version()};
+    }
     auto db_connection = pg_pool.get_connection();
     nlohmann::json json_response;
     try {
