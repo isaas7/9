@@ -40,8 +40,7 @@ create_session(const std::string &username,
   SessionData session_data;
   session_data.username = username;
   session_data.expiration_time =
-      std::chrono::steady_clock::now() +
-      std::chrono::minutes(30);
+      std::chrono::steady_clock::now() + std::chrono::minutes(30);
   session_storage[session_id] = session_data;
   return session_id;
 }
@@ -211,8 +210,7 @@ handle_request(beast::string_view doc_root,
         SessionData session_data;
         session_data.username = username;
         session_data.expiration_time =
-            std::chrono::steady_clock::now() +
-            std::chrono::minutes(30);
+            std::chrono::steady_clock::now() + std::chrono::minutes(30);
         session_storage[session_id] = session_data;
         return res;
       } else {
