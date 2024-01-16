@@ -30,25 +30,6 @@ public:
   std::chrono::steady_clock::time_point expiration_time;
 };
 
-std::string
-create_session(const std::string &username,
-               std::unordered_map<std::string, SessionData> &session_storage) {
-  std::string session_id =
-      "session_" +
-      std::to_string(
-          std::chrono::system_clock::now().time_since_epoch().count());
-
-  SessionData session_data;
-  session_data.username = username;
-  session_data.expiration_time =
-      std::chrono::steady_clock::now() +
-      std::chrono::minutes(30);
-  session_storage[session_id] = session_data;
-
-  // Return the generated session ID
-  return session_id;
-}
-
 class PgConnectionPool {
 public:
   PgConnectionPool(const std::string &conn_str, size_t pool_size)
@@ -147,7 +128,7 @@ std::string path_cat(beast::string_view base, beast::string_view path) {
 bool validate_token(
     const std::string &token,
     const std::unordered_map<std::string, SessionData> &session_storage) {
-  auto session_it = session_storage.find(token); 
+  auto session_it = session_storage.find(token);
   return session_it != session_storage.end() &&
          session_it->second.expiration_time > std::chrono::steady_clock::now();
 }
@@ -179,10 +160,6 @@ handle_request(beast::string_view doc_root,
   auto const login_api = [&req, &pg_pool,
                           &session_storage](const std::vector<std::string>
                                                 &username_password) {
-    std::string create_session(
-        const std::string &username,
-        std::unordered_map<std::string, SessionData> &session_storage);
-
     if (username_password.size() < 2) {
       return http::response<http::string_body>{http::status::bad_request,
                                                req.version()};
@@ -202,11 +179,6 @@ handle_request(beast::string_view doc_root,
 
       if (!result.empty()) {
         http::response<http::string_body> res{http::status::ok, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, "text/plain");
-        res.keep_alive(req.keep_alive());
-        res.body() = "Authentication successful";
-        res.prepare_payload();
         std::string session_id =
             "session_" +
             std::to_string(
@@ -221,6 +193,12 @@ handle_request(beast::string_view doc_root,
             std::chrono::minutes(30); // Set expiration time to 30 minutes
 
         session_storage[session_id] = session_data;
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, "text/plain");
+        res.keep_alive(req.keep_alive());
+        res.body() = "Authentication successful";
+        res.set(http::field::authorization, "Bearer " + session_id);
+        res.prepare_payload();
         return res;
       } else {
         http::response<http::string_body> res{http::status::unauthorized,
@@ -252,15 +230,15 @@ handle_request(beast::string_view doc_root,
         std::equal(bearer_prefix.begin(), bearer_prefix.end(),
                    authorization_header.begin())) {
       std::string token = authorization_header.substr(bearer_prefix.size());
-        std::cout << "customer_api token: " << token << std::endl;
+      std::cout << "customer_api token: " << token << std::endl;
       if (!validate_token(token, session_storage)) {
-        return http::response<http::string_body>{http::status::unauthorized,
-                                                 req.version()};
+        //return http::response<http::string_body>{http::status::unauthorized,
+                                                // req.version()};
       }
 
     } else {
-      return http::response<http::string_body>{http::status::unauthorized,
-                                               req.version()};
+      //return http::response<http::string_body>{http::status::unauthorized,
+                                               //req.version()};
     }
     auto db_connection = pg_pool.get_connection();
     nlohmann::json json_response;
