@@ -1,15 +1,4 @@
 #include "include/listener.hpp"
-#include <algorithm>
-#include <chrono>
-#include <cstdlib>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <nlohmann/json.hpp>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
