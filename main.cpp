@@ -41,7 +41,7 @@ public:
   }
 
   std::shared_ptr<pqxx::connection> get_connection() {
-    std::cout << "hellofrom getconnection" << std::endl;
+    std::cout << "get_connection()" << std::endl;
     return connections_.front();
   }
 
@@ -56,11 +56,18 @@ public:
   queryAbstraction(PgConnectionPool &pg_pool) : pg_pool_(pg_pool) {}
 
   pqxx::result executeSelect(const std::string &query) {
-    auto connection = pg_pool_.get_connection();
-    pqxx::work transaction(*connection);
-    pqxx::result result = transaction.exec(query);
-    transaction.commit();
-    return result;
+    try {
+      auto connection = pg_pool_.get_connection();
+      pqxx::work transaction(*connection);
+      pqxx::result result = transaction.exec(query);
+      transaction.commit();
+      return result;
+    } catch (const std::exception &e) {
+      std::cerr << "Exception caught in executeSelect: " << e.what()
+                << std::endl;
+      // You can handle the exception as needed or rethrow if necessary
+      throw;
+    }
   }
 
 private:
@@ -195,8 +202,8 @@ handle_request(beast::string_view doc_root,
           "session_" +
           std::to_string(
               std::chrono::system_clock::now().time_since_epoch().count());
-      std::cout << "sesion id: " << session_id << std::endl
-                << "session_storage size: " << session_storage.size()
+      std::cout << "login_api session id: " << session_id << std::endl
+                << "login_api session_storage size: " << session_storage.size()
                 << std::endl;
       SessionData session_data;
       session_data.username = username;
@@ -213,8 +220,14 @@ handle_request(beast::string_view doc_root,
       res.prepare_payload();
       return res;
     } else {
-      return http::response<http::string_body>{http::status::unauthorized,
-                                               req.version()};
+      http::response<http::string_body> res{http::status::unauthorized,
+                                            req.version()};
+      res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+      res.set(http::field::content_type, "text/plain");
+      res.keep_alive(req.keep_alive());
+      res.body() = "Authentication failed";
+      res.prepare_payload();
+      return res;
     }
   };
 
