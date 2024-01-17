@@ -15,22 +15,33 @@ To use this application, follow these steps:
 
 ## Endpoints:
 
-- **GET /api?=customers**: Execute SELECT sql query.
+- **POST /api?=login&username=username&password=password** 
 
-    ```
-    $ curl http://localhost:8080/api?=customers
+Submit a post request with username and password and receive session token upon success.  
+    
+```
+$ curl -i --location --request POST 'http://localhost:8080/api?=login&username=Boycey&password=Bannerman' | grep -i authorization
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                Dload  Upload   Total   Spent    Left  Speed
+100    25  100    25    0     0  15974      0 --:--:-- --:--:-- --:--:-- 25000
+Authorization: Bearer session_1705475948932646768
+```
 
-    [{"email":"bbannerman0@cocolog-nifty.com","id":1,"password":"Bannerman","username":"Boycey"},{"email":"rradborne1@wordpress.org","id":2,"password":"Radborne","username":"Roman"},
-    ...
-    {"email":"bcelandrq@census.gov","id":999,"password":"Celand","username":"Billi"},
-    {"email":"rblaverrr@dmoz.org","id":1000,"password":"Blaver","username":"Rube"}]
-    ```
+- **GET /api?=authenticated_products** 
 
-- **POST /api?=login&username=username&password=password**: Execute SELECT sql query with WHERE clause and session storage
-    ```
-    $ curl -X POST "http://localhost:8080/api?=login" -d "username=Boycey&password=Bannerman"
-    $ Authentication successful
-    ```
+Submit a get request with a valid session token and the product data is retrieved from the database.  
+
+```
+$ curl --location 'http://localhost:8080/api?=authenticated_products' \
+--header 'Authorization: Bearer session_1705475948932646768'
+```
+
+Response
+```
+[{"id":1,"name":"Product 1","price":8.36,"quantity":"38"},{"id":2,"name":"Product 2","price":302.53,"quantity":"4"},
+...
+{"id":99,"name":"Product 99","price":344.62,"quantity":"99"},{"id":100,"name":"Product 100","price":251.06,"quantity":"39"}]
+```
 
 
 ## Dependencies:
