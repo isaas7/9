@@ -241,37 +241,43 @@ handle_request(beast::string_view doc_root,
                    authorization_header.begin())) {
       std::string token = authorization_header.substr(bearer_prefix.size());
       std::cout << "customer_api token: " << token << std::endl;
-      if (!validate_token(token, session_storage)) {
+      if (validate_token(token, session_storage)) {
         // return http::response<http::string_body>{http::status::unauthorized,
         //  req.version()};
+        std::string query = "SELECT * FROM mock_data;";
+        pqxx::result result = query_abstraction.executeSelect(query);
+
+        nlohmann::json json_response;
+        for (const auto &row : result) {
+          nlohmann::json row_json;
+          row_json["id"] = row["id"].as<int>();
+          row_json["username"] = row["username"].as<std::string>();
+          row_json["password"] = row["password"].as<std::string>();
+          row_json["email"] = row["email"].as<std::string>();
+          json_response.push_back(row_json);
+        }
+        http::response<http::string_body> res{http::status::ok, req.version()};
+        res.body() = json_response.dump();
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, "application/json");
+        res.keep_alive(req.keep_alive());
+
+        res.prepare_payload();
+        return res;
+        std::cout << "token matches, session_storage: " << std::endl;
       }
-
-    } else {
-      // return http::response<http::string_body>{http::status::unauthorized,
-      // req.version()};
     }
-    std::string query = "SELECT * FROM mock_data;";
-    pqxx::result result = query_abstraction.executeSelect(query);
-
-    nlohmann::json json_response;
-    for (const auto &row : result) {
-      nlohmann::json row_json;
-      row_json["id"] = row["id"].as<int>();
-      row_json["username"] = row["username"].as<std::string>();
-      row_json["password"] = row["password"].as<std::string>();
-      row_json["email"] = row["email"].as<std::string>();
-      json_response.push_back(row_json);
-    }
-
-    http::response<http::string_body> res{http::status::ok, req.version()};
+    http::response<http::string_body> res{http::status::unauthorized,
+                                          req.version()};
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res.set(http::field::content_type, "application/json");
     res.keep_alive(req.keep_alive());
-    res.body() = json_response.dump();
 
     res.prepare_payload();
     return res;
+    // req.version()};
   };
+
   auto const bad_request = [&req](beast::string_view why) {
     http::response<http::string_body> res{http::status::bad_request,
                                           req.version()};
@@ -357,21 +363,10 @@ handle_request(beast::string_view doc_root,
     return server_error(ec.message());
 
   auto const size = body.size();
-
-  if (req.method() == http::verb::head) {
-    http::response<http::empty_body> res{http::status::ok, req.version()};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, mime_type(path));
-    res.content_length(size);
-    res.keep_alive(req.keep_alive());
-    return res;
-  }
-
   http::response<http::file_body> res{
       std::piecewise_construct, std::make_tuple(std::move(body)),
       std::make_tuple(http::status::ok, req.version())};
   res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-  res.set(http::field::content_type, mime_type(path));
   res.content_length(size);
   res.keep_alive(req.keep_alive());
   return res;
