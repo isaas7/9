@@ -65,7 +65,6 @@ public:
     } catch (const std::exception &e) {
       std::cerr << "Exception caught in executeSelect: " << e.what()
                 << std::endl;
-      // You can handle the exception as needed or rethrow if necessary
       throw;
     }
   }
@@ -168,18 +167,6 @@ handle_request(beast::string_view doc_root,
       std::count(req.target().begin(), req.target().end(), '?');
   size_t num_equals = std::count(req.target().begin(), req.target().end(), '=');
   size_t num_ands = std::count(req.target().begin(), req.target().end(), '&');
-  auto const index_request = [&req](beast::string_view target) {
-    http::response<http::string_body> res{http::status::not_found,
-                                          req.version()};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, "text/html");
-    res.keep_alive(req.keep_alive());
-
-    res.body() = "Beast server";
-
-    res.prepare_payload();
-    return res;
-  };
 
   auto const login_api = [&req, &pg_pool, &session_storage,
                           &query_abstraction](const std::vector<std::string>
@@ -208,8 +195,7 @@ handle_request(beast::string_view doc_root,
       SessionData session_data;
       session_data.username = username;
       session_data.expiration_time =
-          std::chrono::steady_clock::now() +
-          std::chrono::minutes(30); // Set expiration time to 30 minutes
+          std::chrono::steady_clock::now() + std::chrono::minutes(30);
 
       session_storage[session_id] = session_data;
       res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -230,41 +216,49 @@ handle_request(beast::string_view doc_root,
       return res;
     }
   };
+  auto const unauthenticated_route = [&req, &pg_pool, &session_storage,
+                                      &query_abstraction](
+                                         beast::string_view target) {
+    http::response<http::string_body> res{http::status::unknown, req.version()};
+    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    res.set(http::field::content_type, "application/json");
+    res.keep_alive(req.keep_alive());
 
-  auto const customer_api = [&req, &pg_pool, &session_storage,
-                             &query_abstraction](beast::string_view target) {
-    std::cout << "request to api made " << std::endl;
+    res.prepare_payload();
+    return res;
+  };
+
+  auto const authenticated_route = [&req, &pg_pool, &session_storage,
+                                    &query_abstraction](
+                                       beast::string_view target) {
+    std::cout << "request to authenticated_products made " << std::endl;
     std::string authorization_header = req[http::field::authorization];
     std::string bearer_prefix = "Bearer ";
     if (authorization_header.size() > bearer_prefix.size() &&
         std::equal(bearer_prefix.begin(), bearer_prefix.end(),
                    authorization_header.begin())) {
       std::string token = authorization_header.substr(bearer_prefix.size());
-      std::cout << "customer_api token: " << token << std::endl;
+      std::cout << "authenticated_products token: " << token << std::endl;
       if (validate_token(token, session_storage)) {
-        // return http::response<http::string_body>{http::status::unauthorized,
-        //  req.version()};
-        std::string query = "SELECT * FROM mock_data;";
+        std::string query = "SELECT * FROM mock_data_products;";
         pqxx::result result = query_abstraction.executeSelect(query);
-
         nlohmann::json json_response;
         for (const auto &row : result) {
           nlohmann::json row_json;
           row_json["id"] = row["id"].as<int>();
-          row_json["username"] = row["username"].as<std::string>();
-          row_json["password"] = row["password"].as<std::string>();
-          row_json["email"] = row["email"].as<std::string>();
+          row_json["name"] = row["name"].as<std::string>();
+          row_json["price"] = row["price"].as<double>();
+          row_json["quantity"] = row["quantity"].as<std::string>();
           json_response.push_back(row_json);
         }
         http::response<http::string_body> res{http::status::ok, req.version()};
-        res.body() = json_response.dump();
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         res.set(http::field::content_type, "application/json");
         res.keep_alive(req.keep_alive());
-
+        res.body() = json_response.dump();
         res.prepare_payload();
+        std::cout << "token matches" << std::endl;
         return res;
-        std::cout << "token matches, session_storage: " << std::endl;
       }
     }
     http::response<http::string_body> res{http::status::unauthorized,
@@ -275,7 +269,6 @@ handle_request(beast::string_view doc_root,
 
     res.prepare_payload();
     return res;
-    // req.version()};
   };
 
   auto const bad_request = [&req](beast::string_view why) {
@@ -340,16 +333,19 @@ handle_request(beast::string_view doc_root,
 
   std::string path = path_cat(doc_root, req.target());
   if (req.target().back() == '/' && req.target().size() == 1)
-    return index_request(req.target());
+    return unauthenticated_route(req.target());
   if (num_slashes == 1 && num_questions == 1) {
     if (num_equals == 0) {
       return bad_request("Illegal request-target");
     }
-    if (req.target() == "/api?=customers" && req.method() == http::verb::get) {
-      return customer_api(req.target());
+    if (req.target() == "/api?=authenticated_products" &&
+        req.method() == http::verb::get) {
+      return authenticated_route(req.target());
     } else {
       return bad_request("Illegal request-target");
     }
+  } else {
+    return unauthenticated_route(req.target());
   }
 
   beast::error_code ec;
