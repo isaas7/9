@@ -32,15 +32,13 @@ pqxx::result PgConnectionPool::selectQuery(const std::string &table) {
 
 bool PgConnectionPool::selectQuery(const std::string &table,
                                    const std::string &username) {
-  const std::string query =
-      "SELECT * FROM " + table + " WHERE username = '" + username + "'";
+  const std::string query = "SELECT * FROM " + table + " WHERE username = $1";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
-    pqxx::result result = transaction.exec(query);
+    pqxx::result result = transaction.exec_params(query, username);
     transaction.commit();
-    return !result.empty(); // Return true if the result is not empty (user
-                            // exists)
+    return !result.empty();
   } catch (const std::exception &e) {
     std::cerr << "Exception caught in selectQuery: " << e.what() << std::endl;
     throw;
@@ -50,16 +48,16 @@ bool PgConnectionPool::selectQuery(const std::string &table,
 pqxx::result PgConnectionPool::selectQuery(const std::string &table,
                                            const std::string &username,
                                            const std::string &password) {
-  const std::string query = "SELECT * FROM " + table + " WHERE username = '" +
-                            username + "' AND password = '" + password + "';";
+  const std::string query =
+      "SELECT * FROM " + table + " WHERE username = $1 AND password = $2";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
-    pqxx::result result = transaction.exec(query);
+    pqxx::result result = transaction.exec_params(query, username, password);
     transaction.commit();
     return result;
   } catch (const std::exception &e) {
-    std::cerr << "Execption caught in selectLogin" << e.what() << std::endl;
+    std::cerr << "Exception caught in selectLogin: " << e.what() << std::endl;
     throw;
   }
 }
@@ -67,24 +65,22 @@ pqxx::result PgConnectionPool::selectQuery(const std::string &table,
 bool PgConnectionPool::insertQuery(const std::string &table,
                                    const std::string &username,
                                    const std::string &password) {
-  // INSERT INTO example_table (username, password) VALUES ('admin',
-  // 'password')
+  // INSERT INTO example_table (username, password) VALUES ($1, $2)
   if (selectQuery(table, username)) {
     std::cerr << "User already exists" << std::endl;
     return false;
   }
-  const std::string query = "INSERT INTO " + table +
-                            "(username, password) VALUES ('" + username +
-                            "', '" + password + "')";
+  const std::string query =
+      "INSERT INTO " + table + "(username, password) VALUES ($1, $2)";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
-    transaction.exec(query);
-    transaction.commit(); // Commit the transaction to persist changes
+    transaction.exec_params(query, username, password);
+    transaction.commit();
     return true;
   } catch (const std::exception &e) {
     std::cerr << "Exception caught in insertRegistration: " << e.what()
               << std::endl;
-    return false; // Return false to indicate failure
+    return false;
   }
 }
