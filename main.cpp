@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
   PgConnectionPool pg_pool("dbname=database_2024 user=user "
-                           "password=password hostaddr=172.19.0.2 port=5432",
+                           "password=password hostaddr=172.17.0.2 port=5432",
                            5);
   std::unordered_map<std::string, SessionData> session_storage;
   auto const address = net::ip::make_address(argv[1]);
@@ -16,8 +16,8 @@ int main(int argc, char *argv[]) {
   auto const threads = std::max<int>(1, std::atoi(argv[3]));
 
   net::io_context ioc{threads};
-  std::make_shared<listener>(ioc, tcp::endpoint{address, port}, pg_pool,
-                             session_storage)
+  std::make_shared<listener>(ioc, tcp::endpoint{address, port}, pg_pool
+                             )
       ->run();
   std::vector<std::thread> v;
   v.reserve(threads - 1);
