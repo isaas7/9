@@ -30,6 +30,23 @@ pqxx::result PgConnectionPool::selectQuery(const std::string &table) {
   }
 }
 
+bool PgConnectionPool::selectQuery(const std::string &table,
+                                   const std::string &username) {
+  const std::string query =
+      "SELECT * FROM " + table + " WHERE username = '" + username + "'";
+  try {
+    auto connection = get_connection();
+    pqxx::work transaction(*connection);
+    pqxx::result result = transaction.exec(query);
+    transaction.commit();
+    return !result.empty(); // Return true if the result is not empty (user
+                            // exists)
+  } catch (const std::exception &e) {
+    std::cerr << "Exception caught in selectQuery: " << e.what() << std::endl;
+    throw;
+  }
+}
+
 pqxx::result PgConnectionPool::selectQuery(const std::string &table,
                                            const std::string &username,
                                            const std::string &password) {
@@ -51,7 +68,11 @@ bool PgConnectionPool::insertQuery(const std::string &table,
                                    const std::string &username,
                                    const std::string &password) {
   // INSERT INTO example_table (username, password) VALUES ('admin',
-  // 'password');
+  // 'password')
+  if (selectQuery(table, username)) {
+    std::cerr << "User already exists" << std::endl;
+    return false;
+  }
   const std::string query = "INSERT INTO " + table +
                             "(username, password) VALUES ('" + username +
                             "', '" + password + "')";
