@@ -67,7 +67,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
       } catch (const std::exception &e) {
         return bad_request("Invalid request body");
       }
-    if (req.target() == "/api/user/register") {
+    if (req.target() == "/api/user/register")
       try {
         json body = json::parse(req.body());
         std::string username = body["username"];
@@ -83,7 +83,6 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
       } catch (const std::exception &e) {
         return bad_request("Invalid request body");
       }
-    }
   }
   if (req.method() != http::verb::get && req.method() != http::verb::head)
     return bad_request("Unknown HTTP-method");
