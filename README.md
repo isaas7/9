@@ -16,13 +16,11 @@ To use this application, follow these steps:
 ## Endpoints:
 
 ## Dependencies:
-- [boost/beast](https://github.com/boostorg/beast): HTTP and WebSocket built on Boost.Asio in C++11
+- [boost/beast](https://github.com/boostorg/beast): HTTP and WebSocket built on [Boost.Asio](https://github.com/boostorg/asio) in C++11
 
 - [nlohmann/json](https://github.com/nlohmann/json): JSON library for C++.
 
 - [pqxx](https://github.com/jtv/libpqxx): C++ library for interacting with PostgreSQL databases.
 
 - [spdlog](https://github.com/gabime/spdlog): Fast C++ logging library
-## Note:
 
-I used [mockaroo](https://www.mockaroo.com/) for mock sql data, simply use their service to create the mock_data table and change the columns ```first_name``` ```last_name``` to ```username``` ```password```.
