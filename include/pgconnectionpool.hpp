@@ -2,7 +2,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
 struct dbSchema_ {
   std::unordered_map<std::string, std::vector<std::string>> db_schema;
 };

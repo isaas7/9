@@ -59,6 +59,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
+        spdlog::info("/api/user/login request");
         if (pg_pool.selectQuery("example_table", username, password))
           return ok_request("Login successful for user: " + username);
         else
@@ -71,7 +72,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
-
+        spdlog::info("/api/user/register request");
         if (pg_pool.insertQuery("example_table", username, password))
           return ok_request("Registration successful for user: " + username);
         else

@@ -29,7 +29,7 @@ listener::listener(net::io_context &ioc, tcp::endpoint endpoint,
 void listener::run() { do_accept(); }
 
 void listener::fail(beast::error_code ec, char const *what) {
-  std::cerr << what << ": " << ec.message() << "\n";
+  spdlog::info("listener::fail {}: {}", what, ec.message());
 }
 
 void listener::do_accept() {
