@@ -34,7 +34,7 @@ bool PgConnectionPool::selectQuery(const std::string &username) {
 pqxx::result PgConnectionPool::selectQuery(const std::string &username,
                                            const std::string &password) {
   const std::string query =
-      "SELECT * FROM " + schema_.tables_[0] + " WHERE username = $1 AND password = $2";
+      "SELECT * FROM " + schema_.tables_[0] + " WHERE "+ schema_.columns_[0] +" = $1 AND "+ schema_.columns_[1] +" = $2"; 
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
