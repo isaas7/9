@@ -7,9 +7,13 @@ int main(int argc, char *argv[]) {
               << "    http-server-async 0.0.0.0 8080 . 1\n";
     return EXIT_FAILURE;
   }
+  dbSchema mySchema;
+  mySchema.tables_ = {"example_table"};
+  mySchema.columns_ = {"username", "password"};
+
   PgConnectionPool pg_pool("dbname=database_2024 user=user "
                            "password=password hostaddr=172.17.0.2 port=5432",
-                           5);
+                           5, mySchema);
   std::unordered_map<std::string, SessionData> session_storage;
   auto const address = net::ip::make_address(argv[1]);
   auto const port = static_cast<unsigned short>(std::atoi(argv[2]));

@@ -52,6 +52,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.prepare_payload();
     return res;
   };
+
   if (req.method() == http::verb::post) {
     if (req.target() == "/api/user/login")
       try {
@@ -59,7 +60,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         std::string username = body["username"];
         std::string password = body["password"];
         pqxx::result result =
-            pg_pool.selectQuery("example_table", username, password);
+            pg_pool.selectQuery(username, password);
         if (!result.empty())
           return ok_request("Login successful for user: " + username);
         else
@@ -73,13 +74,10 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         std::string username = body["username"];
         std::string password = body["password"];
 
-        if (pg_pool.insertQuery("example_table", username, password)) {
-          // Registration successful
+        if (pg_pool.insertQuery(username, password))
           return ok_request("Registration successful for user: " + username);
-        } else {
-          // Registration failure
+        else
           return bad_request("Registration failure for user: " + username);
-        }
       } catch (const std::exception &e) {
         return bad_request("Invalid request body");
       }

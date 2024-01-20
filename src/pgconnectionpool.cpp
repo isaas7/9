@@ -2,8 +2,8 @@
 #include <boost/asio/query.hpp>
 #include <iostream>
 PgConnectionPool::PgConnectionPool(const std::string &conn_str,
-                                   size_t pool_size)
-    : conn_str_(conn_str), pool_size_(pool_size) {
+                                   size_t pool_size, const dbSchema &schema)
+    : conn_str_(conn_str), pool_size_(pool_size), schema_(schema) {
   for (size_t i = 0; i < pool_size_; ++i) {
     auto connection = std::make_shared<pqxx::connection>(conn_str_);
     connections_.emplace_back(connection);
@@ -16,23 +16,9 @@ std::shared_ptr<pqxx::connection> PgConnectionPool::get_connection() {
 
 void PgConnectionPool::selectQuery() {}
 
-pqxx::result PgConnectionPool::selectQuery(const std::string &table) {
-  std::string query = "SELECT * FROM " + table + ";";
-  try {
-    auto connection = get_connection();
-    pqxx::work transaction(*connection);
-    pqxx::result result = transaction.exec(query);
-    transaction.commit();
-    return result;
-  } catch (const std::exception &e) {
-    std::cerr << "Exception caught in selectQuery: " << e.what() << std::endl;
-    throw;
-  }
-}
-
-bool PgConnectionPool::selectQuery(const std::string &table,
-                                   const std::string &username) {
-  const std::string query = "SELECT * FROM " + table + " WHERE username = $1";
+bool PgConnectionPool::selectQuery(const std::string &username) {
+  const std::string query = "SELECT * FROM " + schema_.tables_[0] + " WHERE " +
+                            schema_.columns_[0] + " = $1";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
@@ -45,11 +31,10 @@ bool PgConnectionPool::selectQuery(const std::string &table,
   }
 }
 
-pqxx::result PgConnectionPool::selectQuery(const std::string &table,
-                                           const std::string &username,
+pqxx::result PgConnectionPool::selectQuery(const std::string &username,
                                            const std::string &password) {
   const std::string query =
-      "SELECT * FROM " + table + " WHERE username = $1 AND password = $2";
+      "SELECT * FROM " + schema_.tables_[0] + " WHERE username = $1 AND password = $2";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
@@ -62,16 +47,15 @@ pqxx::result PgConnectionPool::selectQuery(const std::string &table,
   }
 }
 
-bool PgConnectionPool::insertQuery(const std::string &table,
-                                   const std::string &username,
+bool PgConnectionPool::insertQuery(const std::string &username,
                                    const std::string &password) {
-  // INSERT INTO example_table (username, password) VALUES ($1, $2)
-  if (selectQuery(table, username)) {
-    std::cerr << "User already exists" << std::endl;
+  if (selectQuery(username)) {
+    std::cerr << "Exception caught in insertQuery : User already exists"
+              << std::endl;
     return false;
   }
   const std::string query =
-      "INSERT INTO " + table + "(username, password) VALUES ($1, $2)";
+      "INSERT INTO " + schema_.tables_[0] + "("+ schema_.columns_[0] +", "+ schema_.columns_[1] +") VALUES ($1, $2)";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
@@ -79,8 +63,7 @@ bool PgConnectionPool::insertQuery(const std::string &table,
     transaction.commit();
     return true;
   } catch (const std::exception &e) {
-    std::cerr << "Exception caught in insertRegistration: " << e.what()
-              << std::endl;
+    std::cerr << "Exception caught in insertQuery: " << e.what() << std::endl;
     return false;
   }
 }
