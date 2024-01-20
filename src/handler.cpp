@@ -59,9 +59,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
-        pqxx::result result =
-            pg_pool.selectQuery(username, password);
-        if (!result.empty())
+        if (pg_pool.selectQuery("example_table", username, password))
           return ok_request("Login successful for user: " + username);
         else
           return bad_request("Authentication failure");
@@ -74,7 +72,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         std::string username = body["username"];
         std::string password = body["password"];
 
-        if (pg_pool.insertQuery(username, password))
+        if (pg_pool.insertQuery("example_table", username, password))
           return ok_request("Registration successful for user: " + username);
         else
           return bad_request("Registration failure for user: " + username);

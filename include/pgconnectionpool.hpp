@@ -1,26 +1,28 @@
 #include <pqxx/pqxx>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-struct dbSchema {
-  std::vector<std::string> tables_;
-  std::vector<std::string> columns_;
+struct dbSchema_ {
+  std::unordered_map<std::string, std::vector<std::string>> db_schema;
 };
 
 class PgConnectionPool {
 public:
-  PgConnectionPool(const std::string &conn_str, size_t pool_size, const dbSchema& schema);
+  PgConnectionPool(const std::string &conn_str, size_t pool_size,
+                   const dbSchema_ &schema);
   std::shared_ptr<pqxx::connection> get_connection();
 
   void selectQuery();
-  bool selectQuery(const std::string &username);
-  pqxx::result selectQuery(const std::string &username,
-                           const std::string &password);
   void insertQuery();
-  bool insertQuery(const std::string &username,
+  bool selectQuery(const std::string &table, const std::string &username);
+  bool selectQuery(const std::string &table, const std::string &username,
                    const std::string &password);
+  bool insertQuery(const std::string &table, const std::string &username,
+                   const std::string &password);
+
 private:
-  const dbSchema schema_;
+  const dbSchema_ schema_;
   std::string conn_str_;
   size_t pool_size_;
   std::vector<std::shared_ptr<pqxx::connection>> connections_;
