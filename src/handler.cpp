@@ -21,6 +21,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.keep_alive(req.keep_alive());
     res.body() = std::string(why);
     res.prepare_payload();
+    spdlog::get("console_logger")->warn("Bad request occurred: {}", why);
     return res;
   };
   auto const not_found = [&req](beast::string_view target) {
@@ -31,6 +32,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.keep_alive(req.keep_alive());
     res.body() = "The resource '" + std::string(target) + "' was not found.";
     res.prepare_payload();
+    spdlog::get("console_logger")->warn("The resource '{}' was not found", target);
     return res;
   };
   auto const server_error = [&req](beast::string_view what) {
@@ -41,6 +43,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.keep_alive(req.keep_alive());
     res.body() = "An error occurred: '" + std::string(what) + "'";
     res.prepare_payload();
+    spdlog::get("console_logger")->error("An error ocurred: '{}'", what);
     return res;
   };
   auto const ok_request = [&req](beast::string_view target) {
@@ -48,8 +51,9 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res.set(http::field::content_type, "text/html");
     res.keep_alive(req.keep_alive());
-    res.body() = "The resource returns: " + std::string(target);
+    res.body() = "The resource returns \"" + std::string(target) + "\"";
     res.prepare_payload();
+    spdlog::get("console_logger")->debug(res.body());
     return res;
   };
 
@@ -59,11 +63,11 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
-        spdlog::info("/api/user/login request");
+        spdlog::get("console_logger")->debug("/api/user/login request");
         if (pg_pool.selectQuery("example_table", username, password))
           return ok_request("Login successful for user: " + username);
         else
-          return bad_request("Authentication failure");
+          return server_error("Authentication failure");
       } catch (const std::exception &e) {
         return bad_request("Invalid request body");
       }
@@ -72,11 +76,11 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
-        spdlog::info("/api/user/register request");
+        spdlog::get("console_logger")->debug("/api/user/register request");
         if (pg_pool.insertQuery("example_table", username, password))
           return ok_request("Registration successful for user: " + username);
         else
-          return bad_request("Registration failure for user: " + username);
+          return server_error("Registration failure for user: " + username);
       } catch (const std::exception &e) {
         return bad_request("Invalid request body");
       }
