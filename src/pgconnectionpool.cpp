@@ -10,7 +10,7 @@ PgConnectionPool::PgConnectionPool(const std::string &conn_str,
     : conn_str_(conn_str), pool_size_(pool_size), schema_(schema) {
   auto console_logger = spdlog::stdout_color_mt("console_logger");
   // auto file_logger = spdlog::basic_logger_mt("file_logger", "logfile.txt");
-  console_logger->set_level(spdlog::level::debug);
+  console_logger->set_level(spdlog::level::trace);
   spdlog::set_default_logger(console_logger);
   spdlog::flush_every(std::chrono::seconds(3));
   for (size_t i = 0; i < pool_size_; ++i) {
