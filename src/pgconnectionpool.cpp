@@ -1,10 +1,28 @@
 #include "../include/pgconnectionpool.hpp"
 #include <boost/asio/query.hpp>
 #include <iostream>
+#include <mutex>
+#include <random>
 #include <spdlog/common.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+std::string generateSession() {
+  // Generate a random session token (you may need to customize this)
+  const std::string charset =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  std::random_device rd;
+  std::mt19937 generator(rd());
+  std::uniform_int_distribution<int> distribution(0, charset.length() - 1);
+
+  std::string token;
+  for (int i = 0; i < 16; ++i) {
+    token += charset[distribution(generator)];
+  }
+
+  return token;
+}
+
 PgConnectionPool::PgConnectionPool(const std::string &conn_str,
                                    size_t pool_size, const dbSchema_ &schema)
     : conn_str_(conn_str), pool_size_(pool_size), schema_(schema) {
@@ -57,11 +75,35 @@ bool PgConnectionPool::selectQuery(const std::string &table,
     auto connection = get_connection();
     pqxx::work transaction(*connection);
     pqxx::result result = transaction.exec_params(query, username, password);
+
+    if (!result.empty()) {
+      // Check if there is an active session for the user
+      auto sessionIt = session_storage.find(username);
+      if (sessionIt != session_storage.end()) {
+        auto currentTime = std::chrono::steady_clock::now();
+        if (currentTime < sessionIt->second.expiration_time) {
+          spdlog::get("console_logger")
+              ->debug("Login failed. Active session exists for user: {}",
+                      username);
+          return false; // Login fails due to an active session
+        }
+      }
+
+      // Create session on successful login
+      std::string sessionToken = generateSession();
+      session_storage[username] = {
+          username, std::chrono::steady_clock::now() +
+                        std::chrono::hours(
+                            1)}; // Set expiration time to 1 hour for example
+      spdlog::get("console_logger")
+          ->debug("Session created for user: {}", username);
+    }
+
     transaction.commit();
     return !result.empty();
   } catch (const std::exception &e) {
     spdlog::error("Exception caught in selectQuery: {}", e.what());
-    throw;
+    return false;
   }
 }
 
