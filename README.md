@@ -45,11 +45,11 @@ To use this application, follow these steps:
 - Manages session creation and checks for active sessions before allowing logins.
 
 ## Dependencies:
-- [boost/beast](https://github.com/boostorg/beast): HTTP and WebSocket built on [Boost.Asio](https://github.com/boostorg/asio) in C++11
+- [boost/beast](https://github.com/boostorg/beast): HTTP and WebSocket built on [Boost.Asio](https://github.com/boostorg/asio) in C++11.
 
 - [nlohmann/json](https://github.com/nlohmann/json): JSON library for C++.
 
-- [pqxx](https://github.com/jtv/libpqxx): C++ library for interacting with PostgreSQL databases.
+- [pqxx](https://github.com/jtv/libpqxx): The official C++ client API for PostgreSQL.
 
-- [spdlog](https://github.com/gabime/spdlog): Fast C++ logging library
+- [spdlog](https://github.com/gabime/spdlog): Fast C++ logging library.
 
