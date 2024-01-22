@@ -101,10 +101,11 @@ bool PgConnectionPool::selectQuery(const std::string &table,
         }
       }
       std::string sessionToken = this->generateSession();
-      session_storage[username] = {username, std::chrono::steady_clock::now() +
+      session_storage[username] = {username, sessionToken, std::chrono::steady_clock::now() +
                                                  std::chrono::hours(1)};
       spdlog::get("console_logger")
-          ->info("Session created for user: {} session: {}", username, sessionToken);
+          ->info("Session created for user: {} session: {}", username,
+                 sessionToken);
     }
     transaction.commit();
     return !result.empty();

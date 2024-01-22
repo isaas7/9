@@ -12,6 +12,7 @@ struct dbSchema_ {
 class SessionData {
 public:
   std::string username;
+  std::string sessionToken;
   std::chrono::steady_clock::time_point expiration_time;
 };
 
