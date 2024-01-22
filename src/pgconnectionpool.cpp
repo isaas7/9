@@ -53,7 +53,7 @@ pqxx::result PgConnectionPool::selectQuery(const std::string &table) {
 }
 bool PgConnectionPool::selectQuery(const std::string &table,
                                    const std::string &username) {
-  spdlog::get("console_logger")->info("selectQuery {}", username);
+  spdlog::get("console_logger")->info("selectQuery");
   const std::string query = "SELECT * FROM " + table + " WHERE " +
                             schema_.db_schema.at(table)[0] + " = $1";
   try {
@@ -74,7 +74,6 @@ bool PgConnectionPool::selectQuery(const std::string &table,
   const std::string query = "SELECT * FROM " + table + " WHERE " +
                             schema_.db_schema.at(table)[0] + " = $1 AND " +
                             schema_.db_schema.at(table)[1] + " = $2";
-
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
