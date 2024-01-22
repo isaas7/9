@@ -17,15 +17,17 @@ public:
 
 class PgConnectionPool {
 public:
+  std::string generateSession();
   PgConnectionPool(const std::string &conn_str, size_t pool_size,
                    const dbSchema_ &schema);
   std::shared_ptr<pqxx::connection> get_connection();
 
   void selectQuery();
-  void insertQuery();
+  pqxx::result selectQuery(const std::string &table);
   bool selectQuery(const std::string &table, const std::string &username);
   bool selectQuery(const std::string &table, const std::string &username,
                    const std::string &password);
+  void insertQuery();
   bool insertQuery(const std::string &table, const std::string &username,
                    const std::string &password);
 
@@ -36,4 +38,3 @@ private:
   std::vector<std::shared_ptr<pqxx::connection>> connections_;
   std::unordered_map<std::string, SessionData> session_storage;
 };
-
