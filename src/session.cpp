@@ -50,5 +50,5 @@ void session::do_close() {
 }
 
 void session::fail(beast::error_code ec, char const *what) {
-  spdlog::error("session::fail {}: {}", what, ec.message());
+  spdlog::get("console_logger")->info("session::fail {}: {}", what, ec.message());
 }
