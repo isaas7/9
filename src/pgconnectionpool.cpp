@@ -7,6 +7,16 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+void PgConnectionPool::deleteSession(const std::string &username) {
+  auto it = session_storage.find(username);
+  if (it != session_storage.end()) {
+    session_storage.erase(it);
+  }
+}
+const std::unordered_map<std::string, SessionData> &
+PgConnectionPool::getSessions() {
+  return session_storage;
+}
 std::string PgConnectionPool::generateSession() {
   const std::string charset =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -39,10 +49,11 @@ std::shared_ptr<pqxx::connection> PgConnectionPool::get_connection() {
 void PgConnectionPool::selectQuery() {}
 pqxx::result PgConnectionPool::selectQuery(const std::string &table) {
   spdlog::get("console_logger")->info("selectQuery");
+  std::string query = "SELECT * FROM " + table + " WHERE role != 'admin'";
   try {
     auto connection = get_connection();
     pqxx::work transaction(*connection);
-    pqxx::result result = transaction.exec_params("", "");
+    pqxx::result result = transaction.exec_params(query);
     transaction.commit();
     return result;
   } catch (const std::exception &e) {
@@ -93,7 +104,7 @@ bool PgConnectionPool::selectQuery(const std::string &table,
       session_storage[username] = {username, std::chrono::steady_clock::now() +
                                                  std::chrono::hours(1)};
       spdlog::get("console_logger")
-          ->info("Session created for user: {}", username);
+          ->info("Session created for user: {} session: {}", username, sessionToken);
     }
     transaction.commit();
     return !result.empty();

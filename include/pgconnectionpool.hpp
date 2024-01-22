@@ -17,6 +17,8 @@ public:
 
 class PgConnectionPool {
 public:
+  void deleteSession(const std::string& username);
+  const std::unordered_map<std::string, SessionData> &getSessions();
   std::string generateSession();
   PgConnectionPool(const std::string &conn_str, size_t pool_size,
                    const dbSchema_ &schema);
