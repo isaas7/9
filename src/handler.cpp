@@ -24,7 +24,8 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.keep_alive(req.keep_alive());
     res.body() = "The resource '" + std::string(target) + "' was not found.";
     res.prepare_payload();
-    spdlog::get("console_logger")->warn("The resource '{}' was not found", target);
+    spdlog::get("console_logger")
+        ->warn("The resource '{}' was not found", target);
     return res;
   };
   auto const server_error = [&req](beast::string_view what) {
@@ -45,7 +46,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.keep_alive(req.keep_alive());
     res.body() = "The resource returns \"" + std::string(target) + "\"";
     res.prepare_payload();
-    spdlog::get("console_logger")->debug(res.body());
+    spdlog::get("console_logger")->info(res.body());
     return res;
   };
 
@@ -55,8 +56,8 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
-        spdlog::get("console_logger")->debug("/api/user/login request");
-        if (pg_pool.selectQuery("example_table", username, password))
+        spdlog::get("console_logger")->info("/api/user/login request");
+        if (pg_pool.selectQuery("user_table", username, password))
           return ok_request("Login successful for user: " + username);
         else
           return server_error("Authentication failure");
@@ -68,14 +69,18 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         json body = json::parse(req.body());
         std::string username = body["username"];
         std::string password = body["password"];
-        spdlog::get("console_logger")->debug("/api/user/register request");
-        if (pg_pool.insertQuery("example_table", username, password))
+        spdlog::get("console_logger")->info("/api/user/register request");
+        if (pg_pool.insertQuery("user_table", username, password))
           return ok_request("Registration successful for user: " + username);
         else
           return server_error("Registration failure for user: " + username);
       } catch (const std::exception &e) {
         return bad_request("Invalid request body");
       }
+  }
+  if (req.method() == http::verb::get) {
+    if (req.target() == "/api/users") {
+    }
   }
   if (req.method() != http::verb::get && req.method() != http::verb::head)
     return bad_request("Unknown HTTP-method");
