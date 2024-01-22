@@ -9,11 +9,11 @@ int main(int argc, char *argv[]) {
   }
   dbSchema_ schema_;
   schema_.db_schema = {
-      {"example_table", {"username", "password"}},
+      {"user_table", {"username", "password"}},
       {"another_table", {"username", "some_column", "another_column"}}};
 
   PgConnectionPool pg_pool("dbname=database_2024 user=user "
-                           "password=password hostaddr=172.17.0.2 port=5432",
+                           "password=password hostaddr=172.17.0.1 port=5432",
                            5, schema_);
   std::unordered_map<std::string, SessionData> session_storage;
   auto const address = net::ip::make_address(argv[1]);
