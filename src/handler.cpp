@@ -1,10 +1,13 @@
 #include "../include/handler.hpp"
 #include <exception>
 
+auto console_logger = spdlog::stdout_color_mt("console_logger");
 template <class Body, class Allocator>
 http::message_generator
-handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
-               PgConnectionPool &pg_pool) {
+handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
+  console_logger->set_level(spdlog::level::trace);
+  spdlog::set_default_logger(console_logger);
+  spdlog::flush_every(std::chrono::seconds(3));
   auto const bad_request = [&req](beast::string_view why) {
     http::response<http::string_body> res{http::status::bad_request,
                                           req.version()};
@@ -49,99 +52,19 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     spdlog::get("console_logger")->info(res.body());
     return res;
   };
-
-  if (req.method() == http::verb::post) {
-    if (req.target() == "/api/user/login") {
-      try {
-        json body = json::parse(req.body());
-        std::string username = body["username"];
-        std::string password = body["password"];
-        spdlog::get("console_logger")->info("/api/user/login request");
-        if (pg_pool.selectQuery("user_table", username, password)) {
-          const auto &session_storage = pg_pool.getSessions();
-          auto sessionIt = session_storage.find(username);
-          if (sessionIt != session_storage.end()) {
-            std::string sessionToken = sessionIt->second.sessionToken;
-            std::string bearerToken = "Bearer " + sessionToken;
-            http::response<http::string_body> res{http::status::ok,
-                                                  req.version()};
-            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-            res.set(http::field::content_type, "text/html");
-            res.set(http::field::authorization, bearerToken);
-            res.keep_alive(req.keep_alive());
-            res.body() = "Login successful for user: " + username;
-            res.prepare_payload();
-            spdlog::get("console_logger")->info(res.body());
-            return res;
-          } else {
-            return server_error("Session information not found");
-          }
-        } else {
-          return server_error("Authentication failure");
-        }
-      } catch (const std::exception &e) {
-        return bad_request("Invalid request body");
-      }
-    }
-    if (req.target() == "/api/user/register")
-      try {
-        json body = json::parse(req.body());
-        std::string username = body["username"];
-        std::string password = body["password"];
-        spdlog::get("console_logger")->info("/api/user/register request");
-        if (pg_pool.insertQuery("user_table", username, password))
-          return ok_request("Registration successful for user: " + username);
-        else
-          return server_error("Registration failure for user: " + username);
-      } catch (const std::exception &e) {
-        return bad_request("Invalid request body");
-      }
-    if (req.target() == "/api/user/logout") {
-      try {
-        json body = json::parse(req.body());
-        std::string username = body["username"];
-        std::string sessionToken =
-            body["session"]; // Get sessionToken from request body
-        const auto &session_storage = pg_pool.getSessions();
-        auto it = session_storage.find(username);
-        if (it != session_storage.end() &&
-            it->second.sessionToken == sessionToken &&
-            it->second.expiration_time > std::chrono::steady_clock::now()) {
-          pg_pool.deleteSession(username);
-          return ok_request("Logout successful for user: " + username);
-        } else {
-          return server_error("Invalid session or session expired");
-        }
-      } catch (const std::exception &e) {
-        return bad_request("Invalid request body");
-      }
-    }
-  }
-  if (req.method() == http::verb::get) {
-    if (req.target() == "/api/users") {
-      try {
-        pqxx::result usersResult = pg_pool.selectQuery("user_table");
-        json usersJson;
-        for (const auto &row : usersResult) {
-          json userJson;
-          for (const auto &column : row) {
-            userJson[column.name()] = column.c_str();
-          }
-          usersJson.push_back(userJson);
-        }
-        http::response<http::string_body> res{http::status::ok, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, "application/json");
-        res.keep_alive(req.keep_alive());
-        res.body() = usersJson.dump();
-        res.prepare_payload();
-        spdlog::get("console_logger")->info("User list retrieved");
-        return res;
-      } catch (const std::exception &e) {
-        return server_error(e.what());
-      }
-    }
-  }
+  auto const not_acceptable = [&req](beast::string_view target) {
+    http::response<http::string_body> res{http::status::not_acceptable,
+                                          req.version()};
+    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    res.set(http::field::content_type, "text/html");
+    res.keep_alive(req.keep_alive());
+    res.body() = "The request is not acceptable for the resource '" +
+                 std::string(target) + "'.";
+    res.prepare_payload();
+    spdlog::get("console_logger")
+        ->warn("Request not acceptable for resource '{}'", target);
+    return res;
+  };
   if (req.method() != http::verb::get && req.method() != http::verb::head)
     return bad_request("Unknown HTTP-method");
   if (req.target().empty() || req.target()[0] != '/' ||
@@ -149,9 +72,9 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     return bad_request("Illegal request-target");
   if (req.target().back() == '/')
     return ok_request(req.target());
-  return server_error("server error");
+  else
+    return not_acceptable(req.target());
 }
 template http::message_generator handle_request(
     http::request<http::string_body, http::basic_fields<std::allocator<char>>>
-        &&req,
-    PgConnectionPool &pg_pool);
+        &&req);

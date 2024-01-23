@@ -7,10 +7,9 @@ class session : public std::enable_shared_from_this<session> {
   beast::tcp_stream stream_;
   beast::flat_buffer buffer_;
   http::request<http::string_body> req_;
-  PgConnectionPool &pg_pool_;
 
 public:
-  session(tcp::socket &&socket, PgConnectionPool &pg_pool);
+  session(tcp::socket &&socket);
 
   void run();
   void do_read();

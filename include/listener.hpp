@@ -7,11 +7,9 @@
 class listener : public std::enable_shared_from_this<listener> {
   net::io_context &ioc_;
   tcp::acceptor acceptor_;
-  PgConnectionPool &pg_pool_;
 
 public:
-  listener(net::io_context &ioc, tcp::endpoint endpoint,
-           PgConnectionPool &pg_pool);
+  listener(net::io_context &ioc, tcp::endpoint endpoint);
 
   void run();
 

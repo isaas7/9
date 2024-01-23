@@ -1,1 +1,0 @@
-g++ -o test_gui test_gui.cpp -std=c++17 -lboost_system -lboost_thread -lboost_coroutine -lssl -lcrypto `pkg-config --cflags --libs gtk+-3.0`

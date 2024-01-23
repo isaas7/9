@@ -1,7 +1,7 @@
 #include "../include/session.hpp"
 
-session::session(tcp::socket &&socket, PgConnectionPool &pg_pool)
-    : stream_(std::move(socket)), pg_pool_(pg_pool) {}
+session::session(tcp::socket &&socket)
+    : stream_(std::move(socket)) {}
 
 void session::run() {
   net::dispatch(
@@ -23,7 +23,7 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     return do_close();
   if (ec)
     return fail(ec, "read");
-  send_response(handle_request(std::move(req_), pg_pool_));
+  send_response(handle_request(std::move(req_)));
 }
 
 void session::send_response(http::message_generator &&msg) {

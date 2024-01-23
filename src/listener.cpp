@@ -1,8 +1,7 @@
 #include "../include/listener.hpp"
 
-listener::listener(net::io_context &ioc, tcp::endpoint endpoint,
-                   PgConnectionPool &pg_pool)
-    : ioc_(ioc), acceptor_(net::make_strand(ioc)), pg_pool_(pg_pool) {
+listener::listener(net::io_context &ioc, tcp::endpoint endpoint)
+    : ioc_(ioc), acceptor_(net::make_strand(ioc)) {
   beast::error_code ec;
   acceptor_.open(endpoint.protocol(), ec);
   if (ec) {
@@ -29,7 +28,8 @@ listener::listener(net::io_context &ioc, tcp::endpoint endpoint,
 void listener::run() { do_accept(); }
 
 void listener::fail(beast::error_code ec, char const *what) {
-  spdlog::get("console_logger")->info("listener::fail {}: {}", what, ec.message());
+  spdlog::get("console_logger")
+      ->info("listener::fail {}: {}", what, ec.message());
 }
 
 void listener::do_accept() {
@@ -43,7 +43,7 @@ void listener::on_accept(beast::error_code ec, tcp::socket socket) {
     fail(ec, "accept");
     return;
   } else {
-    std::make_shared<session>(std::move(socket), pg_pool_)->run();
+    std::make_shared<session>(std::move(socket))->run();
   }
   do_accept();
 }
