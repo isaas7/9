@@ -1,5 +1,4 @@
 #include "../include/handler.hpp"
-#include <exception>
 
 auto console_logger = spdlog::stdout_color_mt("console_logger");
 template <class Body, class Allocator>
@@ -52,19 +51,6 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
     spdlog::get("console_logger")->info(res.body());
     return res;
   };
-  auto const not_acceptable = [&req](beast::string_view target) {
-    http::response<http::string_body> res{http::status::not_acceptable,
-                                          req.version()};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, "text/html");
-    res.keep_alive(req.keep_alive());
-    res.body() = "The request is not acceptable for the resource '" +
-                 std::string(target) + "'.";
-    res.prepare_payload();
-    spdlog::get("console_logger")
-        ->warn("Request not acceptable for resource '{}'", target);
-    return res;
-  };
   if (req.method() != http::verb::get && req.method() != http::verb::head)
     return bad_request("Unknown HTTP-method");
   if (req.target().empty() || req.target()[0] != '/' ||
@@ -73,7 +59,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
   if (req.target().back() == '/')
     return ok_request(req.target());
   else
-    return not_acceptable(req.target());
+    return not_found(req.target());
 }
 template http::message_generator handle_request(
     http::request<http::string_body, http::basic_fields<std::allocator<char>>>
