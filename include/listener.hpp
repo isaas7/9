@@ -2,7 +2,6 @@
 #define LISTENER_HPP
 
 #include "session.hpp"
-#include <iostream>
 
 class listener : public std::enable_shared_from_this<listener> {
   net::io_context &ioc_;
