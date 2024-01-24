@@ -1,8 +1,8 @@
-# beast-gres
+# beast
 
 ## Description
 
-This repository serves as a minimal starting point for a [boost/beast](https://github.com/boostorg/beast) asynchronous HTTP server.
+This repository contains a simple asynchronous HTTP server built with Boost.Beast
 
 ## Usage
 
