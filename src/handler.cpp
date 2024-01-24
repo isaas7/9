@@ -48,7 +48,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
     res.keep_alive(req.keep_alive());
     res.body() = "The resource returns \"" + std::string(target) + "\"";
     res.prepare_payload();
-    spdlog::get("console_logger")->info(res.body());
+    //spdlog::get("console_logger")->info(res.body());
     return res;
   };
   if (req.method() != http::verb::get && req.method() != http::verb::head)
