@@ -1,5 +1,6 @@
 import subprocess
 import statistics
+import sys 
 
 def run_test(num_threads, total_requests, num_iterations):
     times = []
@@ -18,9 +19,13 @@ def print_stats(times):
     print(f'Median: {statistics.median(times)} ms')
 
 if __name__ == "__main__":
-    num_threads = 2  # Set the desired number of threads
-    total_requests = 10000  # Set the desired total number of requests
-    num_iterations = 10  # Set the desired number of iterations
+    if len(sys.argv) != 4:
+        print("Usage: benchmark.py <num_threads> <total_requests> <num_iterations>")
+        sys.exit(1)
+
+    num_threads = int(sys.argv[1])
+    total_requests = int(sys.argv[2])
+    num_iterations = int(sys.argv[3])
 
     times = run_test(num_threads, total_requests, num_iterations)
     print_stats(times)
