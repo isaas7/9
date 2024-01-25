@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polling Page</title>
+</head>
+<body>
+  <h1>Polling Page</h1>
+  <button onclick="startPolling()">Start Polling</button>
+  <button onclick="stopPolling()">Stop Polling</button>
+  <div id="messagesContainer"></div>
+  <input type="text" id="messageInput" placeholder="Enter your message">
+  <button onclick="sendMessage()">Send Message</button>
+  <script>
+    let pollingTimer;
+
+    async function startPolling() {
+      console.log('Polling started.');
+
+      // Request token from localhost:8080/api/token
+      const tokenResponse = await fetch('http://localhost:9090/api/token');
+      const token = await tokenResponse.text();
+
+      // Set up the polling timer
+      pollingTimer = setInterval(async () => {
+        try {
+          // Use the obtained token in the body of the request to /api/messages
+          const response = await fetch('http://localhost:9090/api/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token }),
+          });
+
+          if (response.ok) {
+            const messages = await response.json();
+            updateMessages(messages);
+            console.log('Polling success:', messages);
+          } else {
+            console.error('Polling failed:', response.statusText);
+          }
+        } catch (error) {
+          console.error('Error during polling:', error.message);
+        }
+      }, 5000); // Poll every 5 seconds
+    }
+    function updateMessages(messages) {
+      // Display messages in the messagesContainer
+      const messagesContainer = document.getElementById('messagesContainer');
+      messagesContainer.innerHTML = '<h2>Received Messages:</h2>';
+
+      if (messages.length === 0) {
+        messagesContainer.innerHTML += '<p>No messages available.</p>';
+      } else {
+        const ul = document.createElement('ul');
+        messages.forEach(message => {
+          const li = document.createElement('li');
+          li.textContent = message;
+          ul.appendChild(li);
+        });
+        messagesContainer.appendChild(ul);
+      }
+    }
+    function stopPolling() {
+      console.log('Polling stopped.');
+
+      // Stop the polling timer
+      clearInterval(pollingTimer);
+
+    }
+
+    async function sendMessage() {
+      const messageINput = document.getElementById('messageInput');
+      const message = messageInput.value;
+      const tokenResponse = await fetch('http://localhost:9090/api/token');
+      const token = await tokenResponse.text();
+      const sendMessageResponse = await fetch('http://localhost:9090/api/messages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, message }),
+      });
+
+      if (sendMessageResponse.ok) {
+        console.log('Message sent successfully.');
+        // You can update the UI here if needed.
+      } else {
+        console.error('Failed to send message:', sendMessageResponse.statusText);
+      }
+
+    }
+  </script>
+</body>
+</html>
+
+
+
