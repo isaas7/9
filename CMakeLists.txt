@@ -9,7 +9,7 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIR})
 endif()
 
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "main.cpp")
+file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "main.cpp" "src/util.cpp")
 
 add_executable(main ${SOURCE_FILES})
 
