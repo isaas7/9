@@ -1,10 +1,10 @@
 #include "include/listener.hpp"
-
+#include <iostream>
 int main(int argc, char *argv[]) {
   if (argc != 4) {
     std::cerr << "Usage: http-server-async <address> <port> <threads>\n"
               << "Example:\n"
-              << "    http-server-async 0.0.0.0 8080 . 1\n";
+              << "    http-server-async 0.0.0.0 8080 1\n";
     return EXIT_FAILURE;
   }
   auto const address = net::ip::make_address(argv[1]);
