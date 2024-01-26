@@ -12,7 +12,7 @@ app.post('/api/messages/send', async (req, res) => {
   try {
     const { message } = req.body;
     messages.push({ message });
-    console.log(`Message received: ${message}`);
+    //console.log(`Message received: ${message}`);
 
     await fetch('http://localhost:8080/api/messages/send', {
       method: 'POST',
@@ -40,18 +40,13 @@ app.get('/api/messages', async (req, res) => {
         timestamp: msg.timestamp,
       })),
     };
-    console.log('Messages retrieved:', response);
+    //console.log('Messages retrieved:', response);
     res.json(response);
   } catch (error) {
     console.error('Error retrieving messages:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
-
-function getCurrentTimestamp() {
-  const now = new Date();
-  return `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
-}
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
