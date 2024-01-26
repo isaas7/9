@@ -1,173 +1,172 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Message App</title>
-  <style>
-    body {
-      background-color: #1a1a1a;
-      color: #ffffff;
-      font-family: 'Arial', sans-serif;
-      text-align: center;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-
-    div {
-      width: 80%;
-      max-width: 400px;
-      margin: 10px;
-      padding: 20px;
-      background-color: #333333;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-      overflow-y: auto; /* Added scrolling for messages */
-      overflow-anchor: auto;
-      max-height: 500px; /* Limiting the height to prevent overflow */
-    }
-
-    h2 {
-      color: #ffcc00;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    label {
-      margin-bottom: 10px;
-      color: #ffffff;
-    }
-
-    input {
-      padding: 8px;
-      margin-bottom: 15px;
-      border: 1px solid #666666;
-      border-radius: 5px;
-      outline: none;
-      color: #333333;
-    }
-
-    button {
-      padding: 8px;
-      background-color: #ffcc00;
-      color: #333333;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #ffdb4d;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    li {
-      background-color: #444444;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      overflow: hidden;
-    }
-
-    li span {
-      font-size: 12px;
-      color: #999999;
-      margin-right: 10px;
-      white-space: nowrap;
-    }
-  </style>
-</head>
-<body>
-<div>
-  <h2>Messages</h2>
-  <ul id="messageList"></ul>
-</div>
-<div>
-  <h2>Send a Message</h2>
-  <form id="sendMessageForm">
-    <label for="messageInput">Message:</label>
-    <input type="text" id="messageInput" name="message" required>
-    <button type="submit">Send</button>
-  </form>
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const sendMessageForm = document.getElementById('sendMessageForm');
-    const messageInput = document.getElementById('messageInput');
-    const messageList = document.getElementById('messageList');
-
-    sendMessageForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const message = messageInput.value;
-
-      if (message.trim() === '') {
-        alert('Please enter a message.');
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Message App</title>
+    <style>
+      body {
+        background-color: #1a1a1a;
+        color: #ffffff;
+        font-family: "Arial", sans-serif;
+        text-align: center;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
       }
 
-      try {
-        await fetch('http://localhost:3000/api/messages/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message }),
+      div {
+        width: 80%;
+        max-width: 400px;
+        margin: 10px;
+        padding: 20px;
+        background-color: #333333;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        overflow-y: auto; /* Added scrolling for messages */
+        overflow-anchor: auto;
+        max-height: 500px; /* Limiting the height to prevent overflow */
+        scroll-behavior: smooth;
+      }
+
+      h2 {
+        color: #ffcc00;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      label {
+        margin-bottom: 10px;
+        color: #ffffff;
+      }
+
+      input {
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #666666;
+        border-radius: 5px;
+        outline: none;
+        color: #333333;
+      }
+
+      button {
+        padding: 8px;
+        background-color: #ffcc00;
+        color: #333333;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      button:hover {
+        background-color: #ffdb4d;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      li {
+        background-color: #444444;
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        overflow: hidden;
+      }
+
+      li span {
+        font-size: 12px;
+        color: #999999;
+        margin-right: 10px;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <h2>Messages</h2>
+      <ul id="messageList"></ul>
+    </div>
+    <div>
+      <h2>Send a Message</h2>
+      <form id="sendMessageForm">
+        <label for="messageInput">Message:</label>
+        <input type="text" id="messageInput" name="message" required />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const sendMessageForm = document.getElementById("sendMessageForm");
+        const messageInput = document.getElementById("messageInput");
+        const messageList = document.getElementById("messageList");
+
+        sendMessageForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const message = messageInput.value;
+
+          if (message.trim() === "") {
+            alert("Please enter a message.");
+            return;
+          }
+
+          try {
+            await fetch("http://localhost:3000/api/messages/send", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ message }),
+            });
+
+            messageInput.value = ""; // Clear the input after sending
+
+            // You can also fetch and update the message list here
+            fetchMessages();
+          } catch (error) {
+            console.error("Error sending message:", error);
+          }
         });
 
-        messageInput.value = ''; // Clear the input after sending
+        async function fetchMessages() {
+          try {
+            const response = await fetch("http://localhost:3000/api/messages");
+            const data = await response.json();
 
-        // You can also fetch and update the message list here
+            // Clear existing messages
+            messageList.innerHTML = "";
+
+            // Display unique messages with timestamps from API
+            data.messages.forEach((msg) => {
+              const listItem = document.createElement("li");
+              listItem.innerHTML = `<span>${msg.timestamp}</span>${msg.message}`;
+              messageList.appendChild(listItem);
+            });
+
+            // Ensure the message list is always scrolled down
+          } catch (error) {
+            console.error("Error fetching messages:", error);
+          }
+        }
+
         fetchMessages();
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    });
-
-    async function fetchMessages() {
-      try {
-        const response = await fetch('http://localhost:3000/api/messages');
-        const data = await response.json();
-
-        // Clear existing messages
-        messageList.innerHTML = '';
-
-        // Display unique messages with timestamps from API
-        data.messages.forEach((msg) => {
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `<span>${msg.timestamp}</span>${msg.message}`;
-          messageList.appendChild(listItem);
-        });
-
-        // Ensure the message list is always scrolled down
-        messageList.scrollTop = messageList.scrollHeight;
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      }
-    }
-
-    fetchMessages();
-  });
-</script>
-
-</body>
+        setInterval(fetchMessages, 1500);
+      });
+    </script>
+  </body>
 </html>
-
