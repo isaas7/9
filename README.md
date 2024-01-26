@@ -1,5 +1,9 @@
 # beast
 
+## Demo
+
+![Alt text](/docs/images/image1.png)
+
 ## Description
 
 This repository contains a simple asynchronous HTTP server built with Boost.Beast
@@ -17,4 +21,3 @@ To use this application, follow these steps:
 - [nlohmann/json](https://github.com/nlohmann/json): JSON library for C++.
 
 - [spdlog](https://github.com/gabime/spdlog): Fast C++ logging library.
-
