@@ -71,17 +71,24 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
     if (req.target() == "/api/messages") {
       try {
         nlohmann::json responseJson;
-        for (int i = 0; i < messages_.size(); i++) {
-          auto timestamp =
-              std::chrono::system_clock::to_time_t(messages_[i].getTimestamp());
-          std::tm tm = *std::gmtime(&timestamp);
-          nlohmann::json messageJson;
-          messageJson["message"] = messages_[i].getMessage();
-          std::ostringstream timestampString;
-          timestampString << std::put_time(&tm, "%F %T");
-          messageJson["timestamp"] = timestampString.str();
-          responseJson["messages"].push_back(messageJson);
+
+        // Check if messages vector is empty
+        if (messages_.empty()) {
+          responseJson["messages"] = nlohmann::json::array();
+        } else {
+          for (int i = 0; i < messages_.size(); i++) {
+            auto timestamp = std::chrono::system_clock::to_time_t(
+                messages_[i].getTimestamp());
+            std::tm tm = *std::gmtime(&timestamp);
+            nlohmann::json messageJson;
+            messageJson["message"] = messages_[i].getMessage();
+            std::ostringstream timestampString;
+            timestampString << std::put_time(&tm, "%F %T");
+            messageJson["timestamp"] = timestampString.str();
+            responseJson["messages"].push_back(messageJson);
+          }
         }
+
         http::response<http::string_body> res{http::status::ok, req.version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         res.set(http::field::content_type, "application/json");
@@ -111,7 +118,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
           logMessage << i + 1 << ": " << messages_[i].getMessage()
                      << std::put_time(&tm, "%F %T") << "\n";
         }
-        spdlog::get("console_logger")->debug(logMessage.str());
+        // spdlog::get("console_logger")->debug(logMessage.str());
         return ok_request("Message sent successfully");
       } catch (const std::exception &e) {
         return server_error("Invalid json body");
