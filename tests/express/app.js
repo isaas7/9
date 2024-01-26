@@ -1,119 +1,58 @@
 const express = require('express');
-const http = require('http');
-const path = require('path');
-const app = express();
 const bodyParser = require('body-parser');
-const messages = []
-app.use(express.static(path.join(__dirname, 'public')));
+const path = require('path'); // Import the path module
+const app = express();
+const port = 3000;
+
 app.use(bodyParser.json());
-app.get('/api/token', async (req, res) => {
-  try {
-    // Make a GET request to localhost:8080/api/token
-    const tokenResponse = await fetch('http://localhost:8080/api/token');
+app.use(express.static(path.join(__dirname, 'public')));
+const messages = [];
 
-    if (tokenResponse.ok) {
-      const token = await tokenResponse.text();
-      res.send(token);
-    } else {
-      console.error('Failed to get token:', tokenResponse.statusText);
-      res.status(500).send('Internal Server Error');
-    }
-  } catch (error) {
-    console.error('Error during token retrieval:', error.message);
-    res.status(500).send('Internal Server Error');
-  }
-});
-app.post('/api/messages', async (req, res) => {
-  try {
-    // Extract the token from the request body
-    const tokenFromBody = req.body.token;
-
-    // Make a GET request to localhost:8080/api/heartbeat with the token in the body
-    const messagesResponse = await fetch('http://localhost:8080/api/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token: tokenFromBody }),
-    });
-
-    if (messagesResponse.ok) {
-      const messagesText = await messagesResponse.text();
-      res.send(messagesText);     
-    } else {
-      console.error(messagesResponse.statusText);
-      res.status(500).send('Internal Server Error');
-    }
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Internal Server Error');
-  }
-});
 app.post('/api/messages/send', async (req, res) => {
   try {
-    // Extract the token and message from the request body
-    const { token, message } = req.body;
+    const { message } = req.body;
+    messages.push({ message });
+    console.log(`Message received: ${message}`);
 
-    // Validate the token (You may want to implement a more secure token validation)
-    // For demonstration purposes, I'm assuming a simple validation here
-    if (token && token.startsWith('Token_')) {
-      // Make a POST request to localhost:8080/api/messages/send
-      const sendMessageResponse = await fetch('http://localhost:8080/api/messages/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, message }),
-      });
-
-      if (sendMessageResponse.ok) {
-        console.log(await sendMessageResponse.text());
-        res.status(200).send('Message sent successfully.');
-      } else {
-        console.error(sendMessageResponse.statusText);
-        res.status(500).send('Internal Server Error');
-      }
-    } else {
-      // Respond with an error if the token is invalid
-      res.status(400).send('Invalid token.');
-    }
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Internal Server Error');
-  }
-});app.post('/api/heartbeat', async (req, res) => {
-  try {
-    // Extract the token from the request body
-    const tokenFromBody = req.body.token;
-
-    // Make a GET request to localhost:8080/api/heartbeat with the token in the body
-    const heartbeatResponse = await fetch('http://localhost:8080/api/heartbeat', {
+    await fetch('http://localhost:8080/api/messages/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ token: tokenFromBody }),
+      body: JSON.stringify({ message }),
     });
 
-    if (heartbeatResponse.ok) {
-      console.log(await heartbeatResponse.text());
-      res.send('Heartbeat received successfully.');     
-    } else {
-      console.error(heartbeatResponse.statusText);
-      res.status(500).send('Internal Server Error');
-    }
+    res.json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Internal Server Error');
+    console.error('Error processing message:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-const PORT = 9090;
-const server = http.createServer(app);
-server.listen(PORT, () => {
-  console.log(`Express app listening on port ${PORT}`);
+app.get('/api/messages', async (req, res) => {
+  try {
+    const remoteResponse = await fetch('http://localhost:8080/api/messages');
+    const remoteData = await remoteResponse.json();
+
+    const response = {
+      messages: remoteData.messages.map((msg) => ({
+        message: msg.message,
+        timestamp: msg.timestamp,
+      })),
+    };
+    console.log('Messages retrieved:', response);
+    res.json(response);
+  } catch (error) {
+    console.error('Error retrieving messages:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
 });
 
+function getCurrentTimestamp() {
+  const now = new Date();
+  return `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
+}
 
-
-
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});

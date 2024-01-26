@@ -1,34 +1,28 @@
 #include "../include/handler.hpp"
 #include <chrono>
-#include <exception>
+#include <iomanip>
 #include <spdlog/spdlog.h>
+#include <sstream>
 #include <string>
 
-std::string generate_token() {
-  auto now = std::chrono::system_clock::now();
-  auto expirationTime = now + std::chrono::seconds(60);
-  auto expirationDuration =
-      std::chrono::duration_cast<std::chrono::seconds>(expirationTime - now);
-  std::time_t expirationTimestamp =
-      std::chrono::system_clock::to_time_t(now + expirationDuration);
-  std::string sessionToken = "Token_" + std::to_string(expirationTimestamp);
-  spdlog::get("console_logger")->info("sessionToken: {}", sessionToken);
-  return sessionToken;
-}
-bool validate_token(std::string token) {
-  std::time_t expirationTimestamp =
-      std::stoi(token.substr(6)); // Assuming the timestamp is part of the token
-  auto now = std::chrono::system_clock::now();
-  if (now > std::chrono::system_clock::from_time_t(expirationTimestamp))
-    return false;
-  else
-    return true;
-}
+class Messages {
+public:
+  Messages(const std::string &message)
+      : message(message), timestamp(std::chrono::system_clock::now()) {}
+  const std::string &getMessage() const { return message; }
+  const std::chrono::system_clock::time_point &getTimestamp() const {
+    return timestamp;
+  }
+
+private:
+  std::string message;
+  std::chrono::system_clock::time_point timestamp;
+};
 
 template <class Body, class Allocator>
 http::message_generator
 handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
-  static std::vector<std::string> messages_;
+  static std::vector<Messages> messages_;
   auto const bad_request = [&req](beast::string_view why) {
     http::response<http::string_body> res{http::status::bad_request,
                                           req.version()};
@@ -70,103 +64,57 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req) {
     res.keep_alive(req.keep_alive());
     res.body() = "The resource returns \"" + std::string(target) + "\"";
     res.prepare_payload();
-    spdlog::get("console_logger")->info(res.body());
+    // spdlog::get("console_logger")->info(res.body());
     return res;
   };
-  auto const messages_request = [&req, &ok_request,
-                                 &bad_request](beast::string_view target,
-                                               std::string sessionToken) {
-    spdlog::get("console_logger")->info("messages_request");
-    nlohmann::json messagesJson;
-    for (const auto &message : messages_) {
-      messagesJson.push_back(message);
-    }
-    http::response<http::string_body> res{http::status::ok, req.version()};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, "application/json");
-    res.keep_alive(req.keep_alive());
-    res.body() = messagesJson.dump();
-    res.prepare_payload();
-    return res;
-  };
-  auto const send_message = [&req, &ok_request,
-                             &bad_request](beast::string_view target,
-                                           std::string sessionToken) {
-    spdlog::get("console_logger")->info("send_message");
-    messages_.emplace_back(sessionToken);
-    http::response<http::string_body> res{http::status::ok, req.version()};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, "application/json");
-    res.keep_alive(req.keep_alive());
-    res.body() = "success";
-    res.prepare_payload();
-    return res;
-  };
-
-  auto const polling_request = [&req, &ok_request, &bad_request,
-                                &messages_request](beast::string_view target,
-                                                   std::string sessionToken) {
-    spdlog::get("console_logger")->info("polling_request");
-    // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    while (validate_token(sessionToken)) {
-      return messages_request("valid token", sessionToken);
-    }
-    return bad_request("token_expired");
-  };
-  auto const token_request = [&req, &ok_request](beast::string_view target,
-                                                 std::string token) {
-    http::response<http::string_body> res{http::status::ok, req.version()};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, "text/html");
-    res.keep_alive(req.keep_alive());
-    res.body() = token;
-    res.prepare_payload();
-    spdlog::get("console_logger")->info(res.body());
-    return res;
-  };
-  if (req.method() == http::verb::post) {
-    if (req.target() == "/api/heartbeat")
+  if (req.method() == http::verb::get) {
+    if (req.target() == "/api/messages") {
       try {
-        nlohmann::json body = nlohmann::json::parse(req.body());
-        std::string token = body["token"];
-        return polling_request(req.target(), token);
+        nlohmann::json responseJson;
+        for (int i = 0; i < messages_.size(); i++) {
+          auto timestamp =
+              std::chrono::system_clock::to_time_t(messages_[i].getTimestamp());
+          std::tm tm = *std::gmtime(&timestamp);
+          nlohmann::json messageJson;
+          messageJson["message"] = messages_[i].getMessage();
+          std::ostringstream timestampString;
+          timestampString << std::put_time(&tm, "%F %T");
+          messageJson["timestamp"] = timestampString.str();
+          responseJson["messages"].push_back(messageJson);
+        }
+        http::response<http::string_body> res{http::status::ok, req.version()};
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, "application/json");
+        res.keep_alive(req.keep_alive());
+        res.body() = responseJson.dump();
+        res.prepare_payload();
+        return res;
       } catch (const std::exception &e) {
-        spdlog::get("console_logger")
-            ->error("Failed to parse JSON body: {}", e.what());
-        return bad_request("Invalid JSON body");
+        return server_error("Error processing request");
       }
+    }
+  }
+  if (req.method() == http::verb::post) {
     if (req.target() == "/api/messages/send")
       try {
-        nlohmann::json body = nlohmann::json::parse(req.body());
-        std::string token = body["token"];
-        std::string message = body["message"];
-        return send_message(req.target(), message);
+        nlohmann::json body = json::parse(req.body());
+        std::string msg = body["message"];
+        Messages msg_(msg);
+        messages_.emplace_back(msg);
+        // log message
+        std::ostringstream logMessage;
+        logMessage << "\n";
+        for (int i = 0; i < messages_.size(); i++) {
+          auto timestamp =
+              std::chrono::system_clock::to_time_t(messages_[i].getTimestamp());
+          std::tm tm = *std::gmtime(&timestamp);
+          logMessage << i + 1 << ": " << messages_[i].getMessage()
+                     << std::put_time(&tm, "%F %T") << "\n";
+        }
+        spdlog::get("console_logger")->debug(logMessage.str());
+        return ok_request("Message sent successfully");
       } catch (const std::exception &e) {
-        spdlog::get("console_logger")
-            ->error("Failed to parse JSON body: {}", e.what());
-        return bad_request("Invalid JSON body");
-      }
-    if (req.target() == "/api/messages")
-      try {
-        nlohmann::json body = nlohmann::json::parse(req.body());
-        std::string token = body["token"];
-        if (validate_token(token))
-          return messages_request(req.target(), token);
-      } catch (const std::exception &e) {
-        spdlog::get("console_logger")
-            ->error("Failed to parse JSON body: {}", e.what());
-        return bad_request("Invalid JSON body");
-      }
-  }
-  if (req.method() == http::verb::get) {
-    if (req.target() == "/api/token")
-      try {
-        std::string token = generate_token();
-        return token_request(req.target(), token);
-      } catch (const std::exception &e) {
-        spdlog::get("console_logger")
-            ->error("Failed to parse JSON body: {}", e.what());
-        return bad_request("Invalid JSON body");
+        return server_error("Invalid json body");
       }
   }
   if (req.method() != http::verb::get && req.method() != http::verb::head)

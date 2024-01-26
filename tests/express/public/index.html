@@ -3,98 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polling Page</title>
+  <title>Message App</title>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    div {
+      width: 80%;
+      max-width: 400px;
+      margin: 10px;
+      padding: 20px;
+      background-color: #333333;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    h2 {
+      color: #ffcc00;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    label {
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    input {
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #666666;
+      border-radius: 5px;
+      outline: none;
+      color: #333333;
+    }
+
+    button {
+      padding: 8px;
+      background-color: #ffcc00;
+      color: #333333;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #ffdb4d;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background-color: #444444;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Polling Page</h1>
-  <button onclick="startPolling()">Start Polling</button>
-  <button onclick="stopPolling()">Stop Polling</button>
-  <div id="messagesContainer"></div>
-  <input type="text" id="messageInput" placeholder="Enter your message">
-  <button onclick="sendMessage()">Send Message</button>
-  <script>
-    let pollingTimer;
 
-    async function startPolling() {
-      console.log('Polling started.');
+<div>
+  <h2>Send a Message</h2>
+  <form id="sendMessageForm">
+    <label for="messageInput">Message:</label>
+    <input type="text" id="messageInput" name="message" required>
+    <button type="submit">Send</button>
+  </form>
+</div>
 
-      // Request token from localhost:8080/api/token
-      const tokenResponse = await fetch('http://localhost:9090/api/token');
-      const token = await tokenResponse.text();
+<div>
+  <h2>Messages</h2>
+  <ul id="messageList"></ul>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const sendMessageForm = document.getElementById('sendMessageForm');
+    const messageInput = document.getElementById('messageInput');
+    const messageList = document.getElementById('messageList');
 
-      // Set up the polling timer
-      pollingTimer = setInterval(async () => {
-        try {
-          // Use the obtained token in the body of the request to /api/messages
-          const response = await fetch('http://localhost:9090/api/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token }),
-          });
+    sendMessageForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
 
-          if (response.ok) {
-            const messages = await response.json();
-            updateMessages(messages);
-            console.log('Polling success:', messages);
-          } else {
-            console.error('Polling failed:', response.statusText);
-          }
-        } catch (error) {
-          console.error('Error during polling:', error.message);
-        }
-      }, 5000); // Poll every 5 seconds
-    }
-    function updateMessages(messages) {
-      // Display messages in the messagesContainer
-      const messagesContainer = document.getElementById('messagesContainer');
-      messagesContainer.innerHTML = '<h2>Received Messages:</h2>';
-
-      if (messages.length === 0) {
-        messagesContainer.innerHTML += '<p>No messages available.</p>';
-      } else {
-        const ul = document.createElement('ul');
-        messages.forEach(message => {
-          const li = document.createElement('li');
-          li.textContent = message;
-          ul.appendChild(li);
-        });
-        messagesContainer.appendChild(ul);
-      }
-    }
-    function stopPolling() {
-      console.log('Polling stopped.');
-
-      // Stop the polling timer
-      clearInterval(pollingTimer);
-
-    }
-
-    async function sendMessage() {
-      const messageINput = document.getElementById('messageInput');
       const message = messageInput.value;
-      const tokenResponse = await fetch('http://localhost:9090/api/token');
-      const token = await tokenResponse.text();
-      const sendMessageResponse = await fetch('http://localhost:9090/api/messages/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, message }),
-      });
 
-      if (sendMessageResponse.ok) {
-        console.log('Message sent successfully.');
-        // You can update the UI here if needed.
-      } else {
-        console.error('Failed to send message:', sendMessageResponse.statusText);
+      if (message.trim() === '') {
+        alert('Please enter a message.');
+        return;
       }
 
+      try {
+        await fetch('http://localhost:3000/api/messages/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message }),
+        });
+
+        messageInput.value = ''; // Clear the input after sending
+
+        // You can also fetch and update the message list here
+        fetchMessages();
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    });
+
+    async function fetchMessages() {
+      try {
+        const response = await fetch('http://localhost:3000/api/messages');
+        const data = await response.json();
+
+        // Clear existing messages
+        messageList.innerHTML = '';
+
+        // Display unique messages
+        const uniqueMessages = Array.from(new Set(data.messages.map(msg => msg.message)));
+        uniqueMessages.forEach((message) => {
+          const listItem = document.createElement('li');
+          listItem.textContent = message;
+          messageList.appendChild(listItem);
+        });
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
     }
-  </script>
+
+    // Initial fetch on page load
+    fetchMessages();
+  });
+</script>
+
 </body>
 </html>
-
-
-
