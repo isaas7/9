@@ -27,6 +27,8 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
       overflow-y: auto; /* Added scrolling for messages */
+      overflow-anchor: auto;
+      max-height: 500px; /* Limiting the height to prevent overflow */
     }
 
     h2 {
@@ -81,12 +83,14 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      overflow: hidden;
     }
 
     li span {
       font-size: 12px;
       color: #999999;
       margin-right: 10px;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -103,8 +107,6 @@
     <button type="submit">Send</button>
   </form>
 </div>
-
-
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -148,27 +150,24 @@
         // Clear existing messages
         messageList.innerHTML = '';
 
-        // Display unique messages with timestamps
-        const uniqueMessages = Array.from(new Set(data.messages.map(msg => msg.message)));
-        uniqueMessages.forEach((message) => {
+        // Display unique messages with timestamps from API
+        data.messages.forEach((msg) => {
           const listItem = document.createElement('li');
-          listItem.innerHTML = `<span>${getCurrentTimestamp()}</span>${message}`;
+          listItem.innerHTML = `<span>${msg.timestamp}</span>${msg.message}`;
           messageList.appendChild(listItem);
         });
+
+        // Ensure the message list is always scrolled down
+        messageList.scrollTop = messageList.scrollHeight;
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
     }
 
-    // Initial fetch on page load
     fetchMessages();
   });
-
-  function getCurrentTimestamp() {
-    const now = new Date();
-    return `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
-  }
 </script>
 
 </body>
 </html>
+
