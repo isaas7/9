@@ -1,7 +1,7 @@
 #include "../include/session.hpp"
 #include "../include/handler.hpp"
-session::session(tcp::socket &&socket)
-    : stream_(std::move(socket)) {}
+session::session(tcp::socket &&socket, ChatSystem chatSystem)
+    : stream_(std::move(socket)), chatSystem_(chatSystem) {}
 
 void session::run() {
   net::dispatch(
@@ -23,7 +23,7 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     return do_close();
   if (ec)
     return fail(ec, "read");
-  send_response(handle_request(std::move(req_)));
+  send_response(handle_request(std::move(req_), chatSystem_));
 }
 
 void session::send_response(http::message_generator &&msg) {
@@ -50,5 +50,6 @@ void session::do_close() {
 }
 
 void session::fail(beast::error_code ec, char const *what) {
-  spdlog::get("console_logger")->info("session::fail {}: {}", what, ec.message());
+  spdlog::get("console_logger")
+      ->info("session::fail {}: {}", what, ec.message());
 }

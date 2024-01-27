@@ -1,14 +1,16 @@
 #ifndef SESSION_HPP
 #define SESSION_HPP
+#include "application.hpp"
 #include "beast.hpp"
 #include "net.hpp"
 class session : public std::enable_shared_from_this<session> {
   beast::tcp_stream stream_;
   beast::flat_buffer buffer_;
   http::request<http::string_body> req_;
+  ChatSystem chatSystem_;
 
 public:
-  session(tcp::socket &&socket);
+  session(tcp::socket &&socket, ChatSystem chatSystem);
 
   void run();
   void do_read();

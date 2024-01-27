@@ -1,8 +1,9 @@
 #include "../include/listener.hpp"
 #include "../include/session.hpp"
 #include "../include/util.hpp"
-listener::listener(net::io_context &ioc, tcp::endpoint endpoint)
-    : ioc_(ioc), acceptor_(net::make_strand(ioc)) {
+listener::listener(net::io_context &ioc, tcp::endpoint endpoint,
+                   ChatSystem chatSystem)
+    : ioc_(ioc), acceptor_(net::make_strand(ioc)), chatSystem_(chatSystem) {
   beast::error_code ec;
   acceptor_.open(endpoint.protocol(), ec);
   if (ec) {
@@ -44,7 +45,7 @@ void listener::on_accept(beast::error_code ec, tcp::socket socket) {
     fail(ec, "accept");
     return;
   } else {
-    std::make_shared<session>(std::move(socket))->run();
+    std::make_shared<session>(std::move(socket), chatSystem_)->run();
   }
   do_accept();
 }
