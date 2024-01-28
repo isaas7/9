@@ -38,8 +38,8 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
         // Populate the response with messages
         for (const auto &message : specifiedRoom.getMessages()) {
           std::string msgstr = message.getMsgString();
-          spdlog::get("console_logger")
-              ->debug("Message in room {}: {}", roomNumber, msgstr);
+          // spdlog::get("console_logger")
+          //     ->debug("Message in room {}: {}", roomNumber, msgstr);
           response_json["messages"].push_back({{"message", msgstr}});
         }
       }
@@ -52,11 +52,11 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
       res.keep_alive(req.keep_alive());
       res.body() = response_str;
       res.prepare_payload();
-      spdlog::get("console_logger")
-          ->debug("ok_request occurred with messages: {}", response_str);
-      spdlog::get("console_logger")
-          ->debug("ChatService rooms size: {}",
-                  chatService->getMsgService().size());
+      // spdlog::get("console_logger")
+      //->debug("ok_request occurred with messages: {}", response_str);
+      // spdlog::get("console_logger")
+      //->debug("ChatService rooms size: {}",
+      // chatService->getMsgService().size());
       return res;
     } else {
       return http_response("not_found", "Specified room not found");
@@ -65,14 +65,14 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
   auto const send_messages_service = [&req, &statusMap, &chatService,
                                       &http_response](std::string msg,
                                                       int roomnum) {
-    spdlog::get("console_logger")->debug("Entering send_messages_service");
+    // spdlog::get("console_logger")->debug("Entering send_messages_service");
     auto &allRooms = chatService->getMsgService();
     if (allRooms.size() == 0)
       chatService->addRoom();
     if (roomnum < 0 || roomnum >= allRooms.size())
       return http_response("not_found", "Specified room not found");
-    spdlog::get("console_logger")
-        ->debug("Existing rooms found. Adding message to room {}.", roomnum);
+    // spdlog::get("console_logger")
+    //     ->debug("Existing rooms found. Adding message to room {}.", roomnum);
     auto &specifiedRoom = allRooms[roomnum];
     specifiedRoom.addMessage(msg);
     json response_json = {{"message", "success"}};
@@ -84,9 +84,9 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     res.keep_alive(req.keep_alive());
     res.body() = response_str;
     res.prepare_payload();
-    spdlog::get("console_logger")
-        ->debug("Exiting send_messages_service. ChatService rooms size: {}",
-                allRooms.size()); // Use reference to allRooms
+    // spdlog::get("console_logger")
+    //    ->debug("Exiting send_messages_service. ChatService rooms size: {}",
+    //            allRooms.size()); // Use reference to allRooms
     return res;
   };
 
