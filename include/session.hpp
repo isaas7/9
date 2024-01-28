@@ -6,10 +6,10 @@ class session : public std::enable_shared_from_this<session> {
   beast::tcp_stream stream_;
   beast::flat_buffer buffer_;
   http::request<http::string_body> req_;
-  std::shared_ptr<MessageService> messageService_;
+  std::shared_ptr<ChatService> chatService_;
 
 public:
-  session(tcp::socket &&socket, std::shared_ptr<MessageService> messageService);
+  session(tcp::socket &&socket, std::shared_ptr<ChatService> chatService);
 
   void run();
   void do_read();

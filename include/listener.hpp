@@ -6,11 +6,11 @@
 class listener : public std::enable_shared_from_this<listener> {
   net::io_context &ioc_;
   tcp::acceptor acceptor_;
-  std::shared_ptr<MessageService> messageService_;
+  std::shared_ptr<ChatService> chatService_;
 
 public:
   listener(net::io_context &ioc, tcp::endpoint endpoint,
-           std::shared_ptr<MessageService> messageService);
+           std::shared_ptr<ChatService> chatService);
   void run();
   void fail(beast::error_code ec, char const *what);
 

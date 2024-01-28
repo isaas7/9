@@ -4,9 +4,8 @@
 #include "../include/util.hpp"
 
 listener::listener(net::io_context &ioc, tcp::endpoint endpoint,
-                   std::shared_ptr<MessageService> messageService)
-    : ioc_(ioc), acceptor_(net::make_strand(ioc)),
-      messageService_(messageService) {
+                   std::shared_ptr<ChatService> chatService)
+    : ioc_(ioc), acceptor_(net::make_strand(ioc)), chatService_(chatService) {
   beast::error_code ec;
   acceptor_.open(endpoint.protocol(), ec);
   if (ec) {
@@ -48,7 +47,7 @@ void listener::on_accept(beast::error_code ec, tcp::socket socket) {
     fail(ec, "accept");
     return;
   } else {
-    session_ = std::make_shared<session>(std::move(socket), messageService_);
+    session_ = std::make_shared<session>(std::move(socket), chatService_);
     session_->run(); // Start the session
   }
   do_accept();

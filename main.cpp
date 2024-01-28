@@ -9,12 +9,12 @@ int main(int argc, char *argv[]) {
               << "    http-server-async 0.0.0.0 8080 1\n";
     return EXIT_FAILURE;
   }
-  auto messageService = std::make_shared<MessageService>();
+  auto chatService = std::make_shared<ChatService>();
   auto const address = net::ip::make_address(argv[1]);
   auto const port = static_cast<unsigned short>(std::atoi(argv[2]));
   auto const threads = std::max<int>(1, std::atoi(argv[3]));
   net::io_context ioc{threads};
-  std::make_shared<listener>(ioc, tcp::endpoint{address, port}, messageService)
+  std::make_shared<listener>(ioc, tcp::endpoint{address, port}, chatService)
       ->run();
   std::vector<std::thread> v;
   v.reserve(threads - 1);

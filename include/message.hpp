@@ -3,7 +3,8 @@
 #include <vector>
 class Message {
 public:
-  Message(std::string &msg) : message(msg){};
+  Message(const std::string &msg) : message(msg){};
+  std::string getMsgString() const { return message; }
 
 private:
   std::string message;
@@ -11,7 +12,7 @@ private:
 
 class MessageService {
 public:
-  void addMessage(std::string msg) { messages.emplace_back(msg); }
+  void addMessage(std::string &msg) { messages.emplace_back(msg); }
   std::vector<Message> getMessages() { return messages; }
 
 private:
@@ -20,6 +21,11 @@ private:
 
 class ChatService {
 public:
+  void addRoom() { rooms_.emplace_back(); }
+  std::vector<MessageService> &getMsgService() {
+    return rooms_;
+  } // Return reference
+
 private:
   std::vector<MessageService> rooms_;
 };
