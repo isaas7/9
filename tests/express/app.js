@@ -1,53 +1,55 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const path = require('path'); // Import the path module
+const express = require("express");
+const bodyParser = require("body-parser");
+const path = require("path");
+
 const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
-const messages = [];
-
-app.post('/api/messages/send', async (req, res) => {
+app.use(express.static(path.join(__dirname, "public")));
+app.post("/api/messages", async (req, res) => {
   try {
-    const { message } = req.body;
-    messages.push({ message });
-    //console.log(`Message received: ${message}`);
+    const { room } = req.body;
 
-    await fetch('http://localhost:8080/api/messages/send', {
-      method: 'POST',
+    const remoteResponse = await fetch("http://localhost:8080/api/messages", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ room }),
     });
 
-    res.json({ success: true, message: 'Message sent successfully' });
-  } catch (error) {
-    console.error('Error processing message:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
+    // Log raw output
+    const rawOutput = await remoteResponse.text();
+    console.log("Raw Output from Fetch:", rawOutput);
 
-app.get('/api/messages', async (req, res) => {
-  try {
-    const remoteResponse = await fetch('http://localhost:8080/api/messages');
-    const remoteData = await remoteResponse.json();
+    if (!remoteResponse.ok) {
+      const errorData = await remoteResponse.json();
+      console.error("Error retrieving messages:", errorData.error);
+
+      res
+        .status(remoteResponse.status)
+        .json({ success: false, message: errorData.error });
+      return;
+    }
+
+    // Parse the outer 'messages' property
+    const remoteData = JSON.parse(rawOutput);
+
+    // Parse the inner JSON string
+    const innerMessages = JSON.parse(remoteData.message || "[]");
 
     const response = {
-      messages: remoteData.messages.map((msg) => ({
-        message: msg.message,
-        timestamp: msg.timestamp,
-      })),
+      messages: innerMessages,
     };
-    //console.log('Messages retrieved:', response);
+
     res.json(response);
   } catch (error) {
-    console.error('Error retrieving messages:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("Error retrieving messages:", error);
+
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
-
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

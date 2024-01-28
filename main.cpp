@@ -1,4 +1,5 @@
 #include "include/listener.hpp"
+#include "include/message.hpp"
 #include <iostream>
 
 int main(int argc, char *argv[]) {
@@ -8,13 +9,12 @@ int main(int argc, char *argv[]) {
               << "    http-server-async 0.0.0.0 8080 1\n";
     return EXIT_FAILURE;
   }
-  ChatSystem chatSystem_;
-  chatSystem_.createRooms();
+  auto messageService = std::make_shared<MessageService>();
   auto const address = net::ip::make_address(argv[1]);
   auto const port = static_cast<unsigned short>(std::atoi(argv[2]));
   auto const threads = std::max<int>(1, std::atoi(argv[3]));
   net::io_context ioc{threads};
-  std::make_shared<listener>(ioc, tcp::endpoint{address, port}, chatSystem_)
+  std::make_shared<listener>(ioc, tcp::endpoint{address, port}, messageService)
       ->run();
   std::vector<std::thread> v;
   v.reserve(threads - 1);
