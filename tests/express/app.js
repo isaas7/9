@@ -1,55 +1,59 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
+const axios = require("axios");
 
 const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+
 app.post("/api/messages", async (req, res) => {
   try {
     const { room } = req.body;
 
-    const remoteResponse = await fetch("http://localhost:8080/api/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ room }),
+    // Make a request to localhost:8080/api/messages
+    const apiResponse = await axios.post("http://localhost:8080/api/messages", {
+      room,
     });
 
-    // Log raw output
-    const rawOutput = await remoteResponse.text();
-    console.log("Raw Output from Fetch:", rawOutput);
+    // Extract messages from the API response
+    const messages = apiResponse.data.messages || [];
 
-    if (!remoteResponse.ok) {
-      const errorData = await remoteResponse.json();
-      console.error("Error retrieving messages:", errorData.error);
-
-      res
-        .status(remoteResponse.status)
-        .json({ success: false, message: errorData.error });
-      return;
-    }
-
-    // Parse the outer 'messages' property
-    const remoteData = JSON.parse(rawOutput);
-
-    // Parse the inner JSON string
-    const innerMessages = JSON.parse(remoteData.message || "[]");
-
-    const response = {
-      messages: innerMessages,
-    };
-
-    res.json(response);
+    // Send the messages as the response
+    return res.json({ messages });
   } catch (error) {
-    console.error("Error retrieving messages:", error);
-
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+app.post("/api/messages/send", async (req, res) => {
+  try {
+    const { room, message } = req.body;
+
+    // Make a request to http://localhost:8080/api/messages/send
+    const apiResponse = await axios.post(
+      "http://localhost:8080/api/messages/send",
+      {
+        room,
+        message,
+      },
+    );
+
+    // Check if the API response indicates success
+    if (apiResponse.data.message === "success") {
+      return res.json({ message: "success" });
+    } else {
+      return res.status(500).json({ error: "Failed to send message" });
+    }
+  } catch (error) {
+    console.error("Error:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
