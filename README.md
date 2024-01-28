@@ -3,6 +3,7 @@
 ## Demo
 
 ![Alt text](/docs/images/image1.png)
+![Alt text](/docs/images/image2.png)
 
 ## Description
 
@@ -16,6 +17,7 @@ To use this application, follow these steps:
 1. Run the compiled executable.
 
 ## Dependencies:
+
 - [boost/beast](https://github.com/boostorg/beast): HTTP and WebSocket built on [Boost.Asio](https://github.com/boostorg/asio) in C++11.
 
 - [nlohmann/json](https://github.com/nlohmann/json): JSON library for C++.
