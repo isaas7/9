@@ -69,8 +69,10 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     auto &allRooms = chatService->getMsgService();
     if (allRooms.size() == 0)
       chatService->addRoom();
-    if (roomnum < 0 || roomnum >= allRooms.size())
+    if (roomnum < 0)
       return http_response("not_found", "Specified room not found");
+    if (roomnum >= allRooms.size())
+      chatService->addRoom();
     // spdlog::get("console_logger")
     //     ->debug("Existing rooms found. Adding message to room {}.", roomnum);
     auto &specifiedRoom = allRooms[roomnum];
@@ -90,7 +92,47 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     return res;
   };
 
+  auto const register_user_service = [&req, &statusMap, &chatService,
+                                      &http_response](std::string msg,
+                                                      int roomnum) {
+    // spdlog::get("console_logger")->debug("Entering send_messages_service");
+    auto &allRooms = chatService->getRooms();
+    // auto &allUsers = userService->getUsers();
+    if (allRooms.size() == 0)
+      chatService->addRoom();
+    if (roomnum < 0)
+      return http_response("not_found", "Specified room not found");
+    if (roomnum >= allRooms.size())
+      chatService->addRoom();
+    // spdlog::get("console_logger")
+    //     ->debug("Existing rooms found. Adding message to room {}.", roomnum);
+    auto &specifiedRoom = allRooms[roomnum];
+    specifiedRoom.addMessage(msg);
+    json response_json = {{"message", "success"}};
+    std::string response_str = response_json.dump();
+    auto status = statusMap["ok_request"];
+    http::response<http::string_body> res{status, req.version()};
+    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+    res.set(http::field::content_type, "application/json");
+    res.keep_alive(req.keep_alive());
+    res.body() = response_str;
+    res.prepare_payload();
+    // spdlog::get("console_logger")
+    //    ->debug("Exiting send_messages_service. ChatService rooms size: {}",
+    //            allRooms.size()); // Use reference to allRooms
+    return res;
+  };
   if (req.method() == http::verb::post) {
+    if (req.target() == "/api/user/register") {
+      try {
+        json body = json::parse(req.body());
+        std::string username = body["username"];
+        std::string password = body["password"];
+
+      } catch (const std::exception &e) {
+        return http_response("server_error", "invalid json body");
+      }
+    }
     if (req.target() == "/api/messages") {
       try {
         json body = json::parse(req.body());
