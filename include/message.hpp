@@ -17,3 +17,9 @@ public:
 private:
   std::vector<Message> messages;
 };
+
+class ChatService {
+public:
+private:
+  std::vector<MessageService> rooms_;
+};
