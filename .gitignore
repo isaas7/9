@@ -3,3 +3,4 @@
 /tests/express/node_modules/
 /tests/express/.env
 /tests/express/*.log
+/.cache/

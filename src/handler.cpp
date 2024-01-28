@@ -30,12 +30,20 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     if (roomNumber >= 0 && roomNumber < allRooms.size()) {
       auto &specifiedRoom = allRooms[roomNumber];
       json response_json;
-      for (const auto &message : specifiedRoom.getMessages()) {
-        std::string msgstr = message.getMsgString();
-        spdlog::get("console_logger")
-            ->debug("Message in room {}: {}", roomNumber, msgstr);
-        response_json["messages"].push_back({{"message", msgstr}});
+
+      if (specifiedRoom.getMessages().empty()) {
+        // Return an empty message if the messages vector is empty
+        response_json["messages"] = json::array();
+      } else {
+        // Populate the response with messages
+        for (const auto &message : specifiedRoom.getMessages()) {
+          std::string msgstr = message.getMsgString();
+          spdlog::get("console_logger")
+              ->debug("Message in room {}: {}", roomNumber, msgstr);
+          response_json["messages"].push_back({{"message", msgstr}});
+        }
       }
+
       std::string response_str = response_json.dump();
       auto status = statusMap["ok_request"];
       http::response<http::string_body> res{status, req.version()};

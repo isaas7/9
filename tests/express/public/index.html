@@ -131,7 +131,7 @@
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ message }),
+              body: JSON.stringify({ room: 0, message }),
             });
 
             messageInput.value = ""; // Clear the input after sending
@@ -145,16 +145,22 @@
 
         async function fetchMessages() {
           try {
-            const response = await fetch("http://localhost:3000/api/messages");
+            const response = await fetch("http://localhost:3000/api/messages", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ room: 0 }),
+            });
             const data = await response.json();
 
             // Clear existing messages
             messageList.innerHTML = "";
 
-            // Display unique messages with timestamps from API
+            // Display messages from API
             data.messages.forEach((msg) => {
               const listItem = document.createElement("li");
-              listItem.innerHTML = `<span>${msg.timestamp}</span>${msg.message}`;
+              listItem.innerHTML = msg.message;
               messageList.appendChild(listItem);
             });
 
@@ -163,7 +169,6 @@
             console.error("Error fetching messages:", error);
           }
         }
-
         fetchMessages();
         setInterval(fetchMessages, 1500);
       });

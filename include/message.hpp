@@ -21,6 +21,7 @@ private:
 
 class ChatService {
 public:
+  ChatService() { rooms_.emplace_back(); }
   void addRoom() { rooms_.emplace_back(); }
   std::vector<MessageService> &getMsgService() {
     return rooms_;
