@@ -12,7 +12,6 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
       {"not_found", http::status::not_found},
       {"server_error", http::status::internal_server_error},
       {"ok_request", http::status::ok}};
-
   auto const http_response = [&req, &statusMap](std::string which,
                                                 beast::string_view str) {
     auto status = statusMap[which];
@@ -27,14 +26,9 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
   };
   auto const get_messages_service = [&req, &statusMap, &chatService,
                                      &http_response](int roomNumber) {
-    // Get all rooms from ChatService
     auto allRooms = chatService->getMsgService();
-
-    // Check if the specified room exists
     if (roomNumber >= 0 && roomNumber < allRooms.size()) {
       auto &specifiedRoom = allRooms[roomNumber];
-
-      // Process messages in the specified room and construct the response body
       json response_json;
       for (const auto &message : specifiedRoom.getMessages()) {
         std::string msgstr = message.getMsgString();
@@ -42,7 +36,6 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
             ->debug("Message in room {}: {}", roomNumber, msgstr);
         response_json["messages"].push_back({{"message", msgstr}});
       }
-
       std::string response_str = response_json.dump();
       auto status = statusMap["ok_request"];
       http::response<http::string_body> res{status, req.version()};
@@ -61,30 +54,21 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
       return http_response("not_found", "Specified room not found");
     }
   };
-  auto const send_messages_service = [&req, &statusMap,
-                                      &chatService](std::string msg) {
+  auto const send_messages_service = [&req, &statusMap, &chatService,
+                                      &http_response](std::string msg,
+                                                      int roomnum) {
     spdlog::get("console_logger")->debug("Entering send_messages_service");
-
-    auto &allRooms = chatService->getMsgService(); // Capture reference
-
-    if (allRooms.empty()) {
-      spdlog::get("console_logger")
-          ->debug("No rooms found. Adding a new room.");
-      // If there are no rooms, add a new room and add the message
+    auto &allRooms = chatService->getMsgService();
+    if (allRooms.size() == 0)
       chatService->addRoom();
-      auto &lastRoom = allRooms.back(); // Use reference to the last room
-      lastRoom.addMessage(msg);
-    } else {
-      spdlog::get("console_logger")
-          ->debug("Existing rooms found. Adding message to the last room.");
-      // If there are existing rooms, add the message to the last room
-      auto &lastRoom = allRooms.back(); // Use reference to the last room
-      lastRoom.addMessage(msg);
-    }
-
+    if (roomnum < 0 || roomnum >= allRooms.size())
+      return http_response("not_found", "Specified room not found");
+    spdlog::get("console_logger")
+        ->debug("Existing rooms found. Adding message to room {}.", roomnum);
+    auto &specifiedRoom = allRooms[roomnum];
+    specifiedRoom.addMessage(msg);
     json response_json = {{"message", "success"}};
     std::string response_str = response_json.dump();
-
     auto status = statusMap["ok_request"];
     http::response<http::string_body> res{status, req.version()};
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -97,20 +81,16 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
                 allRooms.size()); // Use reference to allRooms
     return res;
   };
+
   if (req.method() == http::verb::post) {
     if (req.target() == "/api/messages") {
       try {
         json body = json::parse(req.body());
-
-        // Check if the "room" key exists in the JSON body
         if (body.find("room") == body.end()) {
           return http_response("bad_request",
                                "Missing 'room' key in JSON body");
         }
-
-        // Get the room number from the JSON body
         int roomNumber = body["room"].get<int>();
-
         return get_messages_service(roomNumber);
       } catch (const std::exception &e) {
         return http_response("server_error", "Invalid json body");
@@ -119,8 +99,13 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     if (req.target() == "/api/messages/send") {
       try {
         json body = json::parse(req.body());
+        if (body.find("room") == body.end()) {
+          return http_response("bad_request",
+                               "Missing 'room' key in JSON body");
+        }
         std::string msg = body["message"];
-        return send_messages_service(msg);
+        int roomNumber = body["room"].get<int>();
+        return send_messages_service(msg, roomNumber);
       } catch (const std::exception &e) {
         return http_response("server_error", "Invalid json body");
       }
