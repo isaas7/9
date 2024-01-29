@@ -4,3 +4,5 @@
 /tests/express/.env
 /tests/express/*.log
 /.cache/
+
+streamnotes.md
