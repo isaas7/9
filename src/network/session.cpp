@@ -1,7 +1,6 @@
-#include "../include/session.hpp"
+#include "../../include/network/session.hpp"
 
-session::session(tcp::socket &&socket)
-    : stream_(std::move(socket)) {}
+session::session(tcp::socket &&socket) : stream_(std::move(socket)) {}
 
 void session::run() {
   net::dispatch(
@@ -50,5 +49,6 @@ void session::do_close() {
 }
 
 void session::fail(beast::error_code ec, char const *what) {
-  spdlog::get("console_logger")->info("session::fail {}: {}", what, ec.message());
+  spdlog::get("console_logger")
+      ->info("session::fail {}: {}", what, ec.message());
 }

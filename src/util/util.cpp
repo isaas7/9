@@ -1,4 +1,4 @@
-#include "../include/util.hpp"
+#include "../../include/util/util.hpp"
 
 std::shared_ptr<spdlog::logger> initialize_logger() {
   auto logger = spdlog::stdout_color_mt("console_logger");
