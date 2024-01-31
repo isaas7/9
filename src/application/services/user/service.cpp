@@ -2,6 +2,17 @@
 
 void UserService::addUser(const std::string &username) {
   spdlog::get("console_logger")->debug("UserService::addUser called");
+
+  // Check if the user already exists
+  if (userExists(username)) {
+    // Decide how to handle the case when the username already exists
+    // For example, you can throw an exception or just return without adding
+    spdlog::get("console_logger")
+        ->warn("User with username '{}' already exists.", username);
+    return; // Alternatively, throw an exception or handle it differently
+  }
+
+  // If the username doesn't exist, add the user
   users_.emplace_back(username);
 }
 
@@ -14,8 +25,7 @@ User UserService::getUser(const std::string &username) const {
   if (it != users_.end()) {
     return *it;
   } else {
-    // Return a default-constructed User if not found (you may want to handle
-    // this differently)
+    // Return a default-constructed User if not found
     return User("");
   }
 }
