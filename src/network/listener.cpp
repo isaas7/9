@@ -1,7 +1,8 @@
 #include "../../include/network/listener.hpp"
 
-listener::listener(net::io_context &ioc, tcp::endpoint endpoint)
-    : ioc_(ioc), acceptor_(net::make_strand(ioc)) {
+listener::listener(net::io_context &ioc, tcp::endpoint endpoint,
+                   std::shared_ptr<Application> app)
+    : ioc_(ioc), acceptor_(net::make_strand(ioc)), app_(app) {
   beast::error_code ec;
   acceptor_.open(endpoint.protocol(), ec);
   if (ec) {
@@ -43,7 +44,7 @@ void listener::on_accept(beast::error_code ec, tcp::socket socket) {
     fail(ec, "accept");
     return;
   } else {
-    std::make_shared<session>(std::move(socket))->run();
+    std::make_shared<session>(std::move(socket), app_)->run();
   }
   do_accept();
 }

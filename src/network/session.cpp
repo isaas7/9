@@ -1,6 +1,7 @@
 #include "../../include/network/session.hpp"
 
-session::session(tcp::socket &&socket) : stream_(std::move(socket)) {}
+session::session(tcp::socket &&socket, std::shared_ptr<Application> app)
+    : stream_(std::move(socket)), app_(app) {}
 
 void session::run() {
   net::dispatch(
@@ -22,7 +23,7 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     return do_close();
   if (ec)
     return fail(ec, "read");
-  send_response(handle_request(std::move(req_)));
+  send_response(handle_request(std::move(req_), app_));
 }
 
 void session::send_response(http::message_generator &&msg) {
