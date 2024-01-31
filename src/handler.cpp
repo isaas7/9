@@ -26,7 +26,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
   };
   auto const get_messages_service = [&req, &statusMap, &chatService,
                                      &http_response](int roomNumber) {
-    auto allRooms = chatService->getMsgService();
+    auto allRooms = chatService->getRooms();
     if (roomNumber >= 0 && roomNumber < allRooms.size()) {
       auto &specifiedRoom = allRooms[roomNumber];
       json response_json;
@@ -66,7 +66,7 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
                                       &http_response](std::string msg,
                                                       int roomnum) {
     // spdlog::get("console_logger")->debug("Entering send_messages_service");
-    auto &allRooms = chatService->getMsgService();
+    auto &allRooms = chatService->getRooms();
     if (allRooms.size() == 0)
       chatService->addRoom();
     if (roomnum < 0)
