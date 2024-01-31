@@ -9,6 +9,12 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIR})
 endif()
 
-file(GLOB_RECURSE SOURCE_FILES "src/network/*.cpp" "src/util/*.cpp" "main.cpp")
+file(GLOB_RECURSE SOURCE_FILES
+  "src/network/*.cpp"
+  "src/application/*.cpp"
+  "src/application/services/message/*.cpp"
+  "src/application/services/user/*.cpp"
+  "src/util/*.cpp"
+  "main.cpp")
 
 add_executable(main ${SOURCE_FILES})
