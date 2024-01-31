@@ -1,23 +1,15 @@
 #ifndef HANDLER_HPP
 #define HANDLER_HPP
-#include "beast.hpp"
-#include "net.hpp"
-#include <algorithm>
-#include <chrono>
-#include <cstdlib>
-#include <exception>
-#include <functional>
-#include <iostream>
-#include <memory>
+#include "util.hpp"
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
 #include <nlohmann/json.hpp>
-#include <spdlog/common.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
+
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
+using json = nlohmann::json;
 using json = nlohmann::json;
 
 template <class Body, class Allocator>
