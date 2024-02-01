@@ -24,7 +24,30 @@ handle_request(http::request<Body, http::basic_fields<Allocator>> &&req,
     spdlog::get("console_logger")->debug("{} occurred: {}", which, str);
     return res;
   };
+  if (req.method() == http::verb::post && req.target() == "/game") {
+    try {
+      json requestJson = json::parse(req.body());
+      std::string username1 = requestJson["user1"];
+      std::string username2 = requestJson["user2"];
 
+      auto userService = app->getUserService();
+      auto gameService = app->getGameService();
+
+      if (userService->userExists(username1) &&
+          userService->userExists(username2)) {
+        auto user1 = userService->getUser(username1);
+        auto user2 = userService->getUser(username2);
+
+        auto winner = gameService->playGame(user1, user2);
+
+        return http_response("ok_request", winner.getUsername());
+      } else {
+        return http_response("bad_request", "Invalid user(s) for the game");
+      }
+    } catch (const json::exception &e) {
+      return http_response("bad_request", "Invalid JSON format");
+    }
+  }
   if (req.method() == http::verb::get && req.target() == "/messages") {
     auto messageService = app->getMessageService();
     auto messages = messageService->getMessages();

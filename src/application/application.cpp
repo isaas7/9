@@ -23,3 +23,7 @@ std::shared_ptr<UserService> Application::getUserService() const {
   spdlog::get("console_logger")->debug("Application::getUserService called");
   return userService_;
 }
+std::shared_ptr<GameService> Application::getGameService() const {
+  spdlog::get("console_logger")->debug("Application::getGameService called");
+  return gameService_;
+}
