@@ -5,7 +5,6 @@
 class GameService : public Service {
 public:
   GameService();
-  User playGame(const User &p1, const User &p2);
 
 private:
   Game game_;
